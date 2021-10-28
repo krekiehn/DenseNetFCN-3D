@@ -1,5 +1,5 @@
 FROM nvidia/cuda:11.2.2-cudnn8-runtime-ubuntu18.04
-FROM python:3.9
+FROM python:3.8
 
 MAINTAINER "nicolai krekiehn <nicolai.krekiehn@rad.uni-kiel.de>"
 #CMD nvidia-smi
@@ -20,7 +20,6 @@ RUN pip install -r requirements.txt
 #RUN pip install torch==1.8.1+cu111 torchvision==0.9.1+cu111 torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
 
 RUN apt-get install -y git
-RUN cd .
 RUN cd .
 RUN git clone https://github.com/krekiehn/DenseNetFCN-3D.git #code/DenseNet3D
 RUN git clone https://www.github.com/keras-team/keras-contrib.git ./keras_contrib
