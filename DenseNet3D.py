@@ -26,6 +26,12 @@ This implementation is based on the following reference code:
  - https://github.com/liuzhuang13/DenseNet
 
 '''
+import sys, os
+scriptPath = os.path.realpath(os.path.dirname(sys.argv[0]))
+os.chdir(scriptPath)
+sys.path.append("../keras_contrib")
+
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
