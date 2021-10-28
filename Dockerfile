@@ -1,5 +1,6 @@
-FROM nvidia/cuda:11.2.2-cudnn8-runtime-ubuntu18.04
-FROM python:3.8
+#FROM nvidia/cuda:11.2.2-cudnn8-runtime-ubuntu18.04
+#FROM python:3.8
+FROM tensorflow/tensorflow:2.6.0-gpu
 
 MAINTAINER "nicolai krekiehn <nicolai.krekiehn@rad.uni-kiel.de>"
 #CMD nvidia-smi
