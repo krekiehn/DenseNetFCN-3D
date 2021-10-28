@@ -32,6 +32,7 @@ from __future__ import print_function
 
 import keras.backend as K
 #from keras.engine.topology import get_source_inputs
+from tensorflow.keras.utils import get_source_inputs
 from keras.layers import Activation
 from keras.layers import AveragePooling3D
 from keras.layers import BatchNormalization
