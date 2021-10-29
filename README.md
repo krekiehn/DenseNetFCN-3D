@@ -29,4 +29,5 @@ This implementation is based on the following reference code:
  
  ## Tutorial
  - https://towardsdatascience.com/implementing-a-fully-convolutional-network-fcn-in-tensorflow-2-3c46fb61de3b
+ - https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=9167192
  
