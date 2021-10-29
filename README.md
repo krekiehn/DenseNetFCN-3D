@@ -27,4 +27,6 @@ This implementation is based on the following reference code:
  - https://github.com/liuzhuang13/DenseNet
  - https://github.com/keras-team/keras-contrib/blob/master/keras_contrib/applications/densenet.py
  
+ ## Tutorial
+ - https://towardsdatascience.com/implementing-a-fully-convolutional-network-fcn-in-tensorflow-2-3c46fb61de3b
  
