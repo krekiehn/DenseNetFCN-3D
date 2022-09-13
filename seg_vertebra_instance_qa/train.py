@@ -40,9 +40,10 @@ if __name__ == '__main__':
     df_data = pd.read_csv(os.path.join(dataframe_file_path, dataframe_file), index_col='index',
                           dtype={"Ids": str, "status": int})
 
-    train_generator = DataGenerator(df_data, partition='train')
-    val_generator = DataGenerator(df_data, partition='vali')
-    test_generator = DataGenerator(df_data, partition='test')
+    batch_size = int(input('Batch size?'))*3
+    train_generator = DataGenerator(df_data, partition='train', batch_size=batch_size)
+    val_generator = DataGenerator(df_data, partition='vali', batch_size=batch_size)
+    test_generator = DataGenerator(df_data, partition='test', batch_size=batch_size)
 
     train(model_fcn, train_generator, val_generator, epochs=1)
 
