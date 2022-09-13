@@ -105,7 +105,7 @@ class DataGenerator(tf.keras.utils.Sequence):
             arr = np.load(os.path.join(self.data_path, file_name))
             # normalize
             arr_norm = arr/arr.max()
-            arr_norm = (arr_norm - arr_norm.mean())/arr.std()
+            # arr_norm = (arr_norm - arr_norm.mean())/arr.std()
             X_list.append(arr_norm)
             # ToDo: add some kind of augmentation here. e.g. Rotation, Zoom, noise for segmentation mask???
             # Store class
