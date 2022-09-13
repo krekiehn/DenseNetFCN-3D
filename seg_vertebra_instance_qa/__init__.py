@@ -10,3 +10,7 @@ elif os.path.isdir(r'/home/sukin699/Verse/Verse_full/nnunet/output/281'):
     dataframe_file_path = r'/home/sukin699/Verse/Verse_full/nnunet/output/281'
     dataframe_file = r'seg_instance_masks_dataframe_manuel.csv'
     data_path = r'/home/sukin699/Verse/Verse_full/nnunet/output/281/segmentation_instance_masks'
+else:
+    dataframe_file_path = input('dataframe_file_path')
+    dataframe_file = input('dataframe_filename')
+    data_path = input('data_path')
