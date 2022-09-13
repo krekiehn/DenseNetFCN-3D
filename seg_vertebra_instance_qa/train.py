@@ -1,5 +1,5 @@
 # init a FCN Model for training and later inference?
-from DenseNet3D import DenseNet3D_FCN
+#from DenseNet3D import DenseNet3D_FCN
 from SimpelNet import FCN_model
 from data import DataGenerator
 import tensorflow as tf
