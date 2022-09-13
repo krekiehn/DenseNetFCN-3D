@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 
+from SimpelNet import FCN_model
 # source: https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
 
 # # default
@@ -173,3 +174,7 @@ if __name__ == '__main__':
     test = DataGenerator(df_data)
 
     X, y = test[0]
+
+    model_fcn = FCN_model(len_classes=3)
+
+    print(model_fcn.predict(X))
