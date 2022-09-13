@@ -178,3 +178,4 @@ if __name__ == '__main__':
     model_fcn = FCN_model(len_classes=3)
 
     print(model_fcn.predict(X))
+    print(y)
