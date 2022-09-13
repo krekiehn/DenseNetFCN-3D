@@ -68,7 +68,7 @@ class DataGenerator(tf.keras.utils.Sequence):
             indices_4_batch_list.append(self.list_df_indices[pos_random_source_index].pop())
 
             if len(self.list_df_indices[3]) == 0:
-                self.re_init_indices_df(0)
+                self.re_init_indices_df(3)
             indices_4_batch_list.append(self.list_df_indices[3].pop())
 
         rd.shuffle(indices_4_batch_list)
