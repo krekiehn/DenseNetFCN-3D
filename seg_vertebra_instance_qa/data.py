@@ -102,7 +102,10 @@ class DataGenerator(tf.keras.utils.Sequence):
         for ID in list_IDs_temp:
             file_name = self.df.loc[ID].rel_file
             # Store sample
-            X_list.append(np.load(os.path.join(self.data_path, file_name)))
+            arr = np.load(os.path.join(self.data_path, file_name))
+            # normalize
+            arr = arr/arr.max()
+            X_list.append(arr)
             # ToDo: add some kind of augmentation here. e.g. Rotation, Zoom, noise for segmentation mask???
             # Store class
             # y_class = -1
