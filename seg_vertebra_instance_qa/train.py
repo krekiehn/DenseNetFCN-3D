@@ -5,6 +5,7 @@ from data import DataGenerator
 import tensorflow as tf
 import pandas as pd
 import os
+import datetime
 
 from seg_vertebra_instance_qa.__init__ import *
 
@@ -19,13 +20,22 @@ def train(model, train_generator, val_generator, epochs=50):
     model_path = os.path.join(checkpoint_path,
                               'model_epoch_{epoch:02d}_loss_{loss:.2f}_acc_{accuracy:.2f}_val_loss_{val_loss:.2f}_val_acc_{val_accuracy:.2f}.h5')
 
+    log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+
+    callback_checkpoint = tf.keras.callbacks.ModelCheckpoint(model_path, monitor='val_loss', save_best_only=True, verbose=1)
+    callback_tensorboard = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+    callback_early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=30, restore_best_weights=True)
+
     history = model.fit_generator(generator=train_generator,
                                   steps_per_epoch=len(train_generator),
                                   epochs=epochs,
-                                  callbacks=[tf.keras.callbacks.ModelCheckpoint(model_path, monitor='val_loss',
-                                                                                save_best_only=True, verbose=1)],
+                                  callbacks=[callback_checkpoint, callback_tensorboard, callback_early_stopping],
                                   validation_data=val_generator,
                                   validation_steps=len(val_generator))
+
+    model_dir = r'./saved_model'
+    os.makedirs(model_dir, exist_ok=True)
+    model.save(os.path.join(model_dir, f'model_{datetime.datetime.now().strftime("%Y%m%d")}'))
 
     return history
 
@@ -34,7 +44,12 @@ if __name__ == '__main__':
     # model_fcn = DenseNet3D_FCN((None, None, None, 1), nb_dense_block=5, growth_rate=16,
     #                                nb_layers_per_block=4, upsampling_type='upsampling', classes=1, activation='sigmoid')
     # model_fcn.summary()
-    model_fcn = FCN_model(len_classes=3)
+
+    # multi gpu
+    mirrored_strategy = tf.distribute.MirroredStrategy()
+
+    with mirrored_strategy.scope():
+        model_fcn = FCN_model(len_classes=3)
     model_fcn.summary()
 
     df_data = pd.read_csv(os.path.join(dataframe_file_path, dataframe_file), index_col='index',
@@ -45,5 +60,5 @@ if __name__ == '__main__':
     val_generator = DataGenerator(df_data, partition='vali', batch_size=batch_size)
     test_generator = DataGenerator(df_data, partition='test', batch_size=batch_size)
 
-    train(model_fcn, train_generator, val_generator, epochs=1)
+    h = train(model_fcn, train_generator, val_generator, epochs=1000)
 
