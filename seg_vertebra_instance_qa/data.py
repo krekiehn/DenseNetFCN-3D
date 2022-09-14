@@ -76,6 +76,8 @@ class DataGenerator(tf.keras.utils.Sequence):
         # Generate data
         X, y = self.__data_generation(indices_4_batch_list)
 
+        assert np.isnan(X).sum() == 0, f"X {indices_4_batch_list} includes NaN. {X}"
+        assert np.isnan(y).sum() == 0, f"y {indices_4_batch_list} includes NaN. {y}"
         return X, y
 
     def re_init_indices_df(self, index):
@@ -106,6 +108,7 @@ class DataGenerator(tf.keras.utils.Sequence):
             arr = np.load(os.path.join(self.data_path, file_name))
             # normalize
             arr_norm = arr/arr.max()
+            arr_norm = arr_norm*2 - 1
             # arr_norm = (arr_norm - arr_norm.mean())/arr.std()
             X_list.append(arr_norm)
             # ToDo: add some kind of augmentation here. e.g. Rotation, Zoom, noise for segmentation mask???
