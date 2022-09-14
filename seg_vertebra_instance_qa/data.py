@@ -155,7 +155,7 @@ class DataGenerator(tf.keras.utils.Sequence):
                 index_list = [slice(None), slice(None), slice(None)]
                 index_list_tmp = [slice(None), slice(None), slice(None)]
                 index_list_tmp[axis] = slice(shift_index, None)
-                index_list[axis] = slice(None, shift_index + 1)
+                index_list[axis] = slice(None, arr_norm.shape[axis] - shift_index)
                 if factor > 0:  # shift to the "right" side along axis
                     arr_norm_tmp[index_list_tmp] = arr_norm[index_list]
                 elif factor < 0:
