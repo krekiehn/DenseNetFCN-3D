@@ -112,6 +112,11 @@ class DataGenerator(tf.keras.utils.Sequence):
             # arr_norm = (arr_norm - arr_norm.mean())/arr.std()
             X_list.append(arr_norm)
             # ToDo: add some kind of augmentation here. e.g. Rotation, Zoom, noise for segmentation mask???
+            # add noise: values between arr_norm.min and arr_norm.max() - do this by model architecture
+            # rot90 0 to 3 times for 0 to 3 axis
+            # flip for 0 to 1 time for 0 to 3 axis
+            # shift by 0 to xx % of pixel-length a long axis for 0 to 3 axis # make sure, there are positive values left in the array
+            # zoom in or out by xxx % of what?
             # Store class
             # y_class = -1
             if self.df.loc[ID].fracture_status == 'x':
