@@ -23,7 +23,7 @@ rd.seed = 1
 class DataGenerator(tf.keras.utils.Sequence):
     'Generates data for Keras'
     def __init__(self, df, batch_size=3, n_channels=1,
-                 n_classes=3, shuffle=True, data_path=data_path, partition='train'):
+                 n_classes=3, shuffle=True, data_path=data_path, partition='train', aug_max_shift=0.1):
         'Initialization'
         #self.dim = dim
         self.batch_size = batch_size
@@ -42,6 +42,8 @@ class DataGenerator(tf.keras.utils.Sequence):
         self.list_df_indices = [[]]*4
         self.dict_df_2_list_index = {'df_neg': 0, 'df_pos_frac': 1, 'df_pos_no_frac': 2, 'df_implants': 3}
         self.data_path = data_path
+
+        self.aug_max_shift = aug_max_shift
 
         self.on_epoch_end()
         self.len = self.__len__()
@@ -113,9 +115,56 @@ class DataGenerator(tf.keras.utils.Sequence):
             X_list.append(arr_norm)
             # ToDo: add some kind of augmentation here. e.g. Rotation, Zoom, noise for segmentation mask???
             # add noise: values between arr_norm.min and arr_norm.max() - do this by model architecture
+
             # rot90 0 to 3 times for 0 to 3 axis
+            # how many axis?
+            num_axis = rd.randint(0, 3)
+            axes = [0, 1, 2]
+            rd.shuffle(axes)
+            for i in range(num_axis):
+                axis = axes.pop()
+                axes_4_rot = [0, 1, 2]
+                axes_4_rot.remove(axis)  # remaining axes build up the prependicular plane to the rotation axis
+                rd.shuffle(axes_4_rot)  # direction of rotation. clockwise or counter clockwise is randomly used
+                times = rd.randint(0, 3)  # rot 0 to 3 times. 4 would like 0
+                arr_norm = np.rot90(arr_norm, times, axes=axes_4_rot)
             # flip for 0 to 1 time for 0 to 3 axis
+            # how many axis?
+            num_axis = rd.randint(0, 3)
+            axes = [0, 1, 2]
+            rd.shuffle(axes)
+            for i in range(num_axis):
+                axis = axes.pop()
+                times = rd.randint(0, 1)  # rot 0 to 1 times. flip or not flip
+                if times:
+                    arr_norm = np.flip(arr_norm, axis=axis)
+
             # shift by 0 to xx % of pixel-length a long axis for 0 to 3 axis # make sure, there are positive values left in the array
+            # how many axis?
+            num_axis = rd.randint(0, 3)
+            axes = [0, 1, 2]
+            rd.shuffle(axes)
+            # shift by 0 to max 10? % of side length? make max shift a func argument
+            for i in range(num_axis):
+                axis = axes.pop()
+                max_length = arr_norm.shape[axis]*self.aug_max_shift
+                factor = 1 - rd.random()*2
+
+                arr_norm_tmp = np.zeros(arr_norm.shape) - 1
+                shift_index = int(np.round(max_length*abs(factor)))
+                index_list = [slice(None), slice(None), slice(None)]
+                index_list_tmp = [slice(None), slice(None), slice(None)]
+                index_list_tmp[axis] = slice(shift_index, None)
+                index_list[axis] = slice(None, shift_index + 1)
+                if factor > 0:  # shift to the "right" side along axis
+                    arr_norm_tmp[index_list_tmp] = arr_norm[index_list]
+                elif factor < 0:
+                    arr_norm_tmp[index_list] = arr_norm[index_list_tmp]
+                else:
+                    continue
+                # check if at least one pixel positive value
+                if np.any(arr == 1):
+                    arr_norm = arr_norm_tmp
             # zoom in or out by xxx % of what?
             # Store class
             # y_class = -1
