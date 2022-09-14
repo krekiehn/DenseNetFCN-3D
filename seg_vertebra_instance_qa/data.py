@@ -76,7 +76,7 @@ class DataGenerator(tf.keras.utils.Sequence):
         # Generate data
         X, y = self.__data_generation(indices_4_batch_list)
 
-        assert np.isnan(X).sum() == 0, f"X {indices_4_batch_list} includes NaN. {X}"
+        assert np.isnan(X).sum() == 0, f"NaNs: {np.isnan(X).sum()}, X {indices_4_batch_list} includes NaN. {X.shape}"
         assert np.isnan(y).sum() == 0, f"y {indices_4_batch_list} includes NaN. {y}"
         return X, y
 
@@ -129,7 +129,8 @@ class DataGenerator(tf.keras.utils.Sequence):
         self.dim = max_shape
         print(self.dim)
         # Initialization
-        X = np.empty((self.batch_size, *self.dim, self.n_channels))
+        # X = np.empty((self.batch_size, *self.dim, self.n_channels))
+        X = np.zeros((self.batch_size, *self.dim, self.n_channels)) - 1  # empty values are signed by vbaölue "-1"
         y = np.empty((self.batch_size), dtype=int)
 
         for image_index, image in enumerate(X_list):
