@@ -28,6 +28,7 @@ def train(model, train_generator, val_generator, epochs=50):
 
     try:
         latest = tf.train.latest_checkpoint(checkpoint_path)
+        print(latest)
         model.load_weights(latest)
         loss, acc = model.evaluate(val_generator, verbose=2)
         print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
