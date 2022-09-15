@@ -26,6 +26,12 @@ def train(model, train_generator, val_generator, epochs=50):
     callback_tensorboard = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
     callback_early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=30, restore_best_weights=True)
 
+    try:
+        latest = tf.train.latest_checkpoint(checkpoint_path)
+        model.load_weights(latest)
+    except:
+        pass
+
     history = model.fit_generator(generator=train_generator,
                                   steps_per_epoch=len(train_generator),
                                   epochs=epochs,
