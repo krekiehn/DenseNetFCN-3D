@@ -27,9 +27,10 @@ def train(model, train_generator, val_generator, epochs=50):
     callback_early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=30, restore_best_weights=True)
 
     try:
-        latest = tf.train.latest_checkpoint(checkpoint_path)
-        print(latest)
-        model.load_weights(latest)
+        #latest = tf.train.latest_checkpoint(checkpoint_path)
+        #print(latest)
+        checkpoint_path = '../snapshots'
+        model.load_weights(checkpoint_path)
         loss, acc = model.evaluate(val_generator, verbose=2)
         print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
     except:
