@@ -37,8 +37,10 @@ def train(model, train_generator, val_generator, epochs=50):
         files = filter(os.path.isfile, os.listdir(checkpoint_path))
         files = [os.path.join(checkpoint_path, f) for f in files]  # add path to each file
         files.sort(key=lambda x: os.path.getmtime(x))
+        print(os.path.join(checkpoint_path, files[0]))
+        print(os.path.isfile(os.path.join(checkpoint_path, files[0])))
 
-        model = tf.keras.models.load_model(os.path.join(checkpoint_path, files))
+        model = tf.keras.models.load_model(os.path.join(checkpoint_path, files[0]))
         loss, acc = model.evaluate(val_generator, verbose=2)
         print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
     except:
