@@ -35,13 +35,13 @@ def train(model, train_generator, val_generator, epochs=50):
 
     # search_dir = "/mydir/"
     # os.chdir(checkpoint_path)
-    print(os.listdir())
-    print(checkpoint_path,os.path.isdir(checkpoint_path))
-    print(os.listdir(checkpoint_path))
+    # print(os.listdir())
+    # print(checkpoint_path,os.path.isdir(checkpoint_path))
+    # print(os.listdir(checkpoint_path))
 
     paths = sorted(Path(checkpoint_path).iterdir(), key=os.path.getmtime)
-    print(paths)
-    print(paths[-1], os.path.isfile(paths[-1]))
+    # print(paths)
+    # print(paths[-1], os.path.isfile(paths[-1]))
     # print(checkpoint_path_2, os.path.isdir(checkpoint_path_2))
     # files = filter(os.path.isfile, os.listdir(checkpoint_path_2))
     # files = [os.path.join(checkpoint_path_2, f) for f in files]  # add path to each file
@@ -49,7 +49,7 @@ def train(model, train_generator, val_generator, epochs=50):
     # print(os.path.join(checkpoint_path_2, files[-1]))
     # print(os.path.isfile(os.path.join(checkpoint_path_2, files[-1])))
 
-    model = tf.keras.models.load_model(os.path.join(checkpoint_path_2, files[-1]))
+    model = tf.keras.models.load_model(paths[-1])
 
     #model = tf.keras.models.load_model(r'/home/sukin699/DenseNetFCN-3D/snapshots/model_epoch_86_loss_0.18_acc_0.94_val_loss_0.83_val_acc_0.68.h5')
     loss, acc = model.evaluate(val_generator, verbose=2)
