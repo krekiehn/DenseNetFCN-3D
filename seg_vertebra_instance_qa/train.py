@@ -41,6 +41,7 @@ def train(model, train_generator, val_generator, epochs=50):
 
     paths = sorted(Path(checkpoint_path).iterdir(), key=os.path.getmtime)
     print(paths)
+    print(paths[-1], os.path.isfile(paths[-1]))
     # print(checkpoint_path_2, os.path.isdir(checkpoint_path_2))
     # files = filter(os.path.isfile, os.listdir(checkpoint_path_2))
     # files = [os.path.join(checkpoint_path_2, f) for f in files]  # add path to each file
