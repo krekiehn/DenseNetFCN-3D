@@ -24,28 +24,29 @@ def train(model, train_generator, val_generator, epochs=50):
 
     callback_checkpoint = tf.keras.callbacks.ModelCheckpoint(model_path, monitor='val_loss', save_best_only=True, verbose=1)
     callback_tensorboard = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
-    callback_early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=30, restore_best_weights=True)
+    callback_early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=100, restore_best_weights=True)
 
-    # try:
-    #     # #latest = tf.train.latest_checkpoint(checkpoint_path)
-    #     # #print(latest)
-    #     # checkpoint_path = '../snapshots'
-    #     # # model.load_weights(checkpoint_path)
-    #     #
-    #     # # search_dir = "/mydir/"
-    #     # os.chdir(checkpoint_path)
-    #     # files = filter(os.path.isfile, os.listdir(checkpoint_path))
-    #     # files = [os.path.join(checkpoint_path, f) for f in files]  # add path to each file
-    #     # files.sort(key=lambda x: os.path.getmtime(x))
-    #     # print(os.path.join(checkpoint_path, files[0]))
-    #     # print(os.path.isfile(os.path.join(checkpoint_path, files[0])))
-    #     #
-    #     # model = tf.keras.models.load_model(os.path.join(checkpoint_path, files[0]))
-    #     model = tf.keras.models.load_model(r'/home/sukin699/DenseNetFCN-3D/snapshots/model_epoch_88_loss_0.30_acc_0.89_val_loss_0.70_val_acc_0.73.h5')
-    #     loss, acc = model.evaluate(val_generator, verbose=2)
-    #     print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
-    # except:
-    #     pass
+    try:
+        #latest = tf.train.latest_checkpoint(checkpoint_path)
+        #print(latest)
+        checkpoint_path = '../snapshots'
+        # model.load_weights(checkpoint_path)
+
+        # search_dir = "/mydir/"
+        os.chdir(checkpoint_path)
+        files = filter(os.path.isfile, os.listdir(checkpoint_path))
+        files = [os.path.join(checkpoint_path, f) for f in files]  # add path to each file
+        files.sort(key=lambda x: os.path.getmtime(x))
+        print(os.path.join(checkpoint_path, files[0]))
+        print(os.path.isfile(os.path.join(checkpoint_path, files[-1])))
+
+        model = tf.keras.models.load_model(os.path.join(checkpoint_path, files[-1]))
+        
+        #model = tf.keras.models.load_model(r'/home/sukin699/DenseNetFCN-3D/snapshots/model_epoch_86_loss_0.18_acc_0.94_val_loss_0.83_val_acc_0.68.h5')
+        loss, acc = model.evaluate(val_generator, verbose=2)
+        print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
+    except:
+        pass
 
     history = model.fit_generator(generator=train_generator,
                                   steps_per_epoch=len(train_generator),
