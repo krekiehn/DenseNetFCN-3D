@@ -34,6 +34,7 @@ def train(model, train_generator, val_generator, epochs=50):
 
     # search_dir = "/mydir/"
     # os.chdir(checkpoint_path)
+    print(os.listdir())
     files = filter(os.path.isfile, os.listdir(checkpoint_path_2))
     files = [os.path.join(checkpoint_path_2, f) for f in files]  # add path to each file
     files.sort(key=lambda x: os.path.getmtime(x))
