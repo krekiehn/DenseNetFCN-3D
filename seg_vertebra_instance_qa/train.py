@@ -33,7 +33,7 @@ def train(model, train_generator, val_generator, epochs=50):
     # model.load_weights(checkpoint_path)
 
     # search_dir = "/mydir/"
-    os.chdir(checkpoint_path)
+    # os.chdir(checkpoint_path)
     files = filter(os.path.isfile, os.listdir(checkpoint_path))
     files = [os.path.join(checkpoint_path, f) for f in files]  # add path to each file
     files.sort(key=lambda x: os.path.getmtime(x))
