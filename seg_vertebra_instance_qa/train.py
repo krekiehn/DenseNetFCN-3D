@@ -5,6 +5,7 @@ from data import DataGenerator
 import tensorflow as tf
 import pandas as pd
 import os
+from pathlib import Path
 import datetime
 
 from seg_vertebra_instance_qa.__init__ import *
@@ -37,12 +38,15 @@ def train(model, train_generator, val_generator, epochs=50):
     print(os.listdir())
     print(checkpoint_path,os.path.isdir(checkpoint_path))
     print(os.listdir(checkpoint_path))
-    print(checkpoint_path_2, os.path.isdir(checkpoint_path_2))
-    files = filter(os.path.isfile, os.listdir(checkpoint_path_2))
-    files = [os.path.join(checkpoint_path_2, f) for f in files]  # add path to each file
-    files.sort(key=lambda x: os.path.getmtime(x))
-    print(os.path.join(checkpoint_path_2, files[-1]))
-    print(os.path.isfile(os.path.join(checkpoint_path_2, files[-1])))
+
+    paths = sorted(Path(checkpoint_path).iterdir(), key=os.path.getmtime)
+    print(paths)
+    # print(checkpoint_path_2, os.path.isdir(checkpoint_path_2))
+    # files = filter(os.path.isfile, os.listdir(checkpoint_path_2))
+    # files = [os.path.join(checkpoint_path_2, f) for f in files]  # add path to each file
+    # files.sort(key=lambda x: os.path.getmtime(x))
+    # print(os.path.join(checkpoint_path_2, files[-1]))
+    # print(os.path.isfile(os.path.join(checkpoint_path_2, files[-1])))
 
     model = tf.keras.models.load_model(os.path.join(checkpoint_path_2, files[-1]))
 
