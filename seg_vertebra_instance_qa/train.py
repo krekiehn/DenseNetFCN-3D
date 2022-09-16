@@ -29,7 +29,7 @@ def train(model, train_generator, val_generator, epochs=50):
     # try:
     #latest = tf.train.latest_checkpoint(checkpoint_path)
     #print(latest)
-    checkpoint_path = '../snapshots'
+    # checkpoint_path = '../snapshots'
     # model.load_weights(checkpoint_path)
 
     # search_dir = "/mydir/"
