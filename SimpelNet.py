@@ -69,7 +69,7 @@ def FCN_model(len_classes=5, dropout_rate=0.2, shape=(None, None, None, 1)):
 
     model = tf.keras.Model(inputs=input, outputs=predictions)
 
-    print(model.summary())
+    print(model.summary(line_length=150))
     print(f'Total number of layers: {len(model.layers)}')
 
     return model
