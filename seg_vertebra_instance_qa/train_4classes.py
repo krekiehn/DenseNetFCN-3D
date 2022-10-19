@@ -40,7 +40,7 @@ def train(model, train_generator, val_generator, epochs=50):
         print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
     # except:
     #     pass
-
+    print(model.summary(line_length=150))
     history = model.fit_generator(generator=train_generator,
                                   steps_per_epoch=len(train_generator),
                                   epochs=epochs,
