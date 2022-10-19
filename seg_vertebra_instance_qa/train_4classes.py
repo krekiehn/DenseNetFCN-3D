@@ -10,6 +10,10 @@ import datetime
 
 from seg_vertebra_instance_qa.__init__ import *
 
+parameters = {
+    'n_channels': 2, 
+    'n_classes': 4
+}
 
 def train(model, train_generator, val_generator, epochs=50):
     model.compile(optimizer=tf.keras.optimizers.Adam(lr=0.0001),
@@ -29,10 +33,11 @@ def train(model, train_generator, val_generator, epochs=50):
 
     paths = sorted(Path(checkpoint_path).iterdir(), key=os.path.getmtime)
 
-    model = tf.keras.models.load_model(paths[-1])
+    if len(paths) > 0:
+        model = tf.keras.models.load_model(paths[-1])
     
-    loss, acc = model.evaluate(val_generator, verbose=2)
-    print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
+        loss, acc = model.evaluate(val_generator, verbose=2)
+        print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
     # except:
     #     pass
 
@@ -56,18 +61,24 @@ if __name__ == '__main__':
     # model_fcn.summary()
 
     # multi gpu
-    mirrored_strategy = tf.distribute.MirroredStrategy()
+    if multi_gpu_flag:
+        mirrored_strategy = tf.distribute.MirroredStrategy()
 
-    with mirrored_strategy.scope():
-        model_fcn = FCN_model(len_classes=3)
-    model_fcn.summary()
+        with mirrored_strategy.scope():
+            model_fcn = FCN_model(len_classes=3)
+        #model_fcn.summary()
+    else:
+        # non mutli GPU:
+        os.environ["CUDA_VISIBLE_DEVICES"] = ""
+        
+        model_fcn = FCN_model(len_classes=parameters['n_classes'], dropout_rate=0.2, shape=(None, None, None, parameters['n_channels']))
 
-    df_data = pd.read_csv(os.path.join(dataframe_file_path, dataframe_file), index_col='index')
+    df_data = pd.read_csv(os.path.join(dataframe_file_path, dataframe_file_4classes), index_col='index')
 
     batch_size = int(input('Batch size?'))*4
     train_generator = DataGenerator_4_classes(df_data, partition='train', batch_size=batch_size, n_channels=2, n_classes=4)
     val_generator = DataGenerator_4_classes(df_data, partition='vali', batch_size=batch_size, n_channels=2, n_classes=4)
     test_generator = DataGenerator_4_classes(df_data, partition='test', batch_size=batch_size, n_channels=2, n_classes=4)
 
-    h = train(model_fcn, train_generator, val_generator, epochs=1000)
+    #h = train(model_fcn, train_generator, val_generator, epochs=1)
 
