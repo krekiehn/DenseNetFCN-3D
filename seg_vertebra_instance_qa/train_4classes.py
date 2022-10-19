@@ -21,7 +21,7 @@ def train(model, train_generator, val_generator, epochs=50):
                   loss='categorical_crossentropy',
                   metrics=['accuracy'])
 
-    checkpoint_path = './snapshots'
+    checkpoint_path = './snapshots_4classes'
     os.makedirs(checkpoint_path, exist_ok=True)
     model_path = os.path.join(checkpoint_path,
                               'model_epoch_{epoch:02d}_loss_{loss:.2f}_acc_{accuracy:.2f}_val_loss_{val_loss:.2f}_val_acc_{val_accuracy:.2f}.h5')
