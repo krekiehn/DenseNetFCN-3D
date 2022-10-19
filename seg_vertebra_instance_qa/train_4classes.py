@@ -70,6 +70,7 @@ if __name__ == '__main__':
     else:
         # non mutli GPU:
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
+        tf.config.set_visible_devices([], 'GPU')
 
         model_fcn = FCN_model(len_classes=parameters['n_classes'], dropout_rate=0.2, shape=(None, None, None, parameters['n_channels']))
 
