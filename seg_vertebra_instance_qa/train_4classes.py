@@ -69,7 +69,7 @@ if __name__ == '__main__':
     # multi gpu
     if multi_gpu_flag:
         tf.keras.mixed_precision.set_global_policy('mixed_float16')
-        os.environ['TF_GPU_ALLOCATOR'] = 'cuda_malloc_async'
+        # os.environ['TF_GPU_ALLOCATOR'] = 'cuda_malloc_async'
         if len(tf.config.get_visible_devices('GPU')) > 1:
             mirrored_strategy = tf.distribute.MirroredStrategy()
             with mirrored_strategy.scope():
