@@ -61,7 +61,8 @@ if __name__ == '__main__':
     # model_fcn.summary()
 
     # multi gpu
-    if multi_gpu_flag:
+    # if multi_gpu_flag:
+    if False:
         mirrored_strategy = tf.distribute.MirroredStrategy()
 
         with mirrored_strategy.scope():
