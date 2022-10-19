@@ -5,6 +5,7 @@ from data import DataGenerator_4_classes
 import tensorflow as tf
 import pandas as pd
 import os
+import numpy as np
 from pathlib import Path
 import datetime
 
@@ -41,6 +42,11 @@ def train(model, train_generator, val_generator, epochs=50):
     # except:
     #     pass
     print(model.summary(line_length=150))
+    
+    X = np.zeros((1,12,12,12,2))
+    y = model.predict(X)
+    print("Output Shape Model:", y.shape)
+    
     history = model.fit_generator(generator=train_generator,
                                   steps_per_epoch=len(train_generator),
                                   epochs=epochs,
