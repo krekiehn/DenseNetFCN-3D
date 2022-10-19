@@ -66,7 +66,7 @@ if __name__ == '__main__':
 
         with mirrored_strategy.scope():
             model_fcn = FCN_model(len_classes=parameters['n_classes'], dropout_rate=0.2, shape=(None, None, None, parameters['n_channels']))
-        #model_fcn.summary()
+        # model_fcn.summary()
     else:
         # non mutli GPU:
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -80,5 +80,5 @@ if __name__ == '__main__':
     val_generator = DataGenerator_4_classes(df_data, partition='vali', batch_size=batch_size, n_channels=2, n_classes=4)
     test_generator = DataGenerator_4_classes(df_data, partition='test', batch_size=batch_size, n_channels=2, n_classes=4)
 
-    #h = train(model_fcn, train_generator, val_generator, epochs=1)
+    h = train(model_fcn, train_generator, val_generator, epochs=1000)
 
