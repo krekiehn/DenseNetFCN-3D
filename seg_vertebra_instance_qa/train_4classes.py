@@ -68,11 +68,14 @@ if __name__ == '__main__':
 
     # multi gpu
     if multi_gpu_flag:
-    # if False:
-        mirrored_strategy = tf.distribute.MirroredStrategy()
-
-        with mirrored_strategy.scope():
-            model_fcn = FCN_model(len_classes=parameters['n_classes'], dropout_rate=0.2, shape=(None, None, None, parameters['n_channels']))
+        os.environ['TF_GPU_ALLOCATOR'] = 'cuda_malloc_async'
+        if len(tf.config.get_visible_devices('GPU')) > 1:
+            mirrored_strategy = tf.distribute.MirroredStrategy()
+            with mirrored_strategy.scope():
+                model_fcn = FCN_model(len_classes=parameters['n_classes'], dropout_rate=0.2, shape=(None, None, None, parameters['n_channels']))
+        else:
+            model_fcn = FCN_model(len_classes=parameters['n_classes'], dropout_rate=0.2,
+                                  shape=(None, None, None, parameters['n_channels']))
         # model_fcn.summary()
     else:
         # non mutli GPU:
