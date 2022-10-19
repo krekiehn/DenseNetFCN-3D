@@ -65,12 +65,12 @@ if __name__ == '__main__':
         mirrored_strategy = tf.distribute.MirroredStrategy()
 
         with mirrored_strategy.scope():
-            model_fcn = FCN_model(len_classes=3)
+            model_fcn = FCN_model(len_classes=parameters['n_classes'], dropout_rate=0.2, shape=(None, None, None, parameters['n_channels']))
         #model_fcn.summary()
     else:
         # non mutli GPU:
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
-        
+
         model_fcn = FCN_model(len_classes=parameters['n_classes'], dropout_rate=0.2, shape=(None, None, None, parameters['n_channels']))
 
     df_data = pd.read_csv(os.path.join(dataframe_file_path, dataframe_file_4classes), index_col='index')
