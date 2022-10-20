@@ -105,6 +105,12 @@ if __name__ == '__main__':
     df_data = pd.read_csv(os.path.join(dataframe_file_path, dataframe_file_4classes), index_col='index')
 
     batch_size = int(input('Batch size?'))*4
+    
+    try:
+        batch_size = batch_size*mirrored_strategy.num_replicas_in_sync
+    except :
+        pass
+    
     train_generator = DataGenerator_4_classes(df_data, partition='train', batch_size=batch_size, n_channels=2, n_classes=4,
                                               down_sampling=True)
     val_generator = DataGenerator_4_classes(df_data, partition='vali', batch_size=batch_size, n_channels=2, n_classes=4,
