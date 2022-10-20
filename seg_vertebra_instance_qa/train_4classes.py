@@ -17,10 +17,6 @@ parameters = {
 }
 
 def train(model, train_generator, val_generator, epochs=50):
-    model.compile(optimizer=tf.keras.optimizers.Adam(lr=0.0001),
-                  loss='categorical_crossentropy',
-                  metrics=['accuracy'])
-
     checkpoint_path = './snapshots_4classes'
     os.makedirs(checkpoint_path, exist_ok=True)
     model_path = os.path.join(checkpoint_path,
@@ -47,12 +43,20 @@ def train(model, train_generator, val_generator, epochs=50):
     # y = model.predict(X)
     # print("Output Shape Model:", y.shape)
     
-    history = model.fit_generator(generator=train_generator,
-                                  steps_per_epoch=len(train_generator),
-                                  epochs=epochs,
-                                  callbacks=[callback_checkpoint, callback_tensorboard, callback_early_stopping],
-                                  validation_data=val_generator,
-                                  validation_steps=len(val_generator))
+    # history = model.fit_generator(generator=train_generator,
+    #                               steps_per_epoch=len(train_generator),
+    #                               epochs=epochs,
+    #                               callbacks=[callback_checkpoint, callback_tensorboard, callback_early_stopping],
+    #                               validation_data=val_generator,
+    #                               validation_steps=len(val_generator))
+
+    history = model.fit(
+        generator=train_generator,
+        steps_per_epoch=len(train_generator),
+        epochs=epochs,
+        callbacks=[callback_checkpoint, callback_tensorboard, callback_early_stopping],
+        validation_data=val_generator,
+        validation_steps=len(val_generator))
 
     model_dir = r'./saved_model'
     os.makedirs(model_dir, exist_ok=True)
@@ -77,10 +81,16 @@ if __name__ == '__main__':
             print("num_replicas_in_sync: ", mirrored_strategy.num_replicas_in_sync)
             with mirrored_strategy.scope():
                 model_fcn = FCN_model(len_classes=parameters['n_classes'], dropout_rate=0.2, shape=(None, None, None, parameters['n_channels']))
+                model_fcn.compile(optimizer=tf.keras.optimizers.Adam(lr=0.0001),
+                              loss='categorical_crossentropy',
+                              metrics=['accuracy'])
         else:
             print(f"MULTI GPU OFF: No. GPUs {len(tf.config.get_visible_devices('GPU'))}")
             model_fcn = FCN_model(len_classes=parameters['n_classes'], dropout_rate=0.2,
                                   shape=(None, None, None, parameters['n_channels']))
+            model_fcn.compile(optimizer=tf.keras.optimizers.Adam(lr=0.0001),
+                          loss='categorical_crossentropy',
+                          metrics=['accuracy'])
         # model_fcn.summary()
     else:
         # non mutli GPU:
@@ -88,6 +98,9 @@ if __name__ == '__main__':
         tf.config.set_visible_devices([], 'GPU')
 
         model_fcn = FCN_model(len_classes=parameters['n_classes'], dropout_rate=0.2, shape=(None, None, None, parameters['n_channels']))
+        model_fcn.compile(optimizer=tf.keras.optimizers.Adam(lr=0.0001),
+                      loss='categorical_crossentropy',
+                      metrics=['accuracy'])
 
     df_data = pd.read_csv(os.path.join(dataframe_file_path, dataframe_file_4classes), index_col='index')
 
