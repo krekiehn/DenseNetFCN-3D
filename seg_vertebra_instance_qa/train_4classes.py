@@ -43,9 +43,9 @@ def train(model, train_generator, val_generator, epochs=50):
     #     pass
     print(model.summary(line_length=150))
     
-    X = np.zeros((1,12,12,12,2))
-    y = model.predict(X)
-    print("Output Shape Model:", y.shape)
+    # X = np.zeros((1,12,12,12,2))
+    # y = model.predict(X)
+    # print("Output Shape Model:", y.shape)
     
     history = model.fit_generator(generator=train_generator,
                                   steps_per_epoch=len(train_generator),
@@ -71,10 +71,12 @@ if __name__ == '__main__':
         tf.keras.mixed_precision.set_global_policy('mixed_float16')
         # os.environ['TF_GPU_ALLOCATOR'] = 'cuda_malloc_async'
         if len(tf.config.get_visible_devices('GPU')) > 1:
+            print(f"MULTI GPU ON: No. GPUs {len(tf.config.get_visible_devices('GPU'))}")
             mirrored_strategy = tf.distribute.MirroredStrategy()
             with mirrored_strategy.scope():
                 model_fcn = FCN_model(len_classes=parameters['n_classes'], dropout_rate=0.2, shape=(None, None, None, parameters['n_channels']))
         else:
+            print(f"MULTI GPU OFF: No. GPUs {len(tf.config.get_visible_devices('GPU'))}")
             model_fcn = FCN_model(len_classes=parameters['n_classes'], dropout_rate=0.2,
                                   shape=(None, None, None, parameters['n_channels']))
         # model_fcn.summary()
