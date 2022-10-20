@@ -72,7 +72,9 @@ if __name__ == '__main__':
         # os.environ['TF_GPU_ALLOCATOR'] = 'cuda_malloc_async'
         if len(tf.config.get_visible_devices('GPU')) > 1:
             print(f"MULTI GPU ON: No. GPUs {len(tf.config.get_visible_devices('GPU'))}")
+
             mirrored_strategy = tf.distribute.MirroredStrategy()
+            print("num_replicas_in_sync: ", mirrored_strategy.num_replicas_in_sync)
             with mirrored_strategy.scope():
                 model_fcn = FCN_model(len_classes=parameters['n_classes'], dropout_rate=0.2, shape=(None, None, None, parameters['n_channels']))
         else:
