@@ -113,3 +113,12 @@ def build_verse_snipet_bbox(verse_data_path = r'S:\Data\VerSe_full', output_data
         # sitk.WriteImage(cropper, raw_ct_bbox_nifti_file_path)
         
     #return ct, ct_arr_bbox_nii
+    
+    
+def shape_size_from_bbox():
+    shapes = []
+    for index in df.index:
+        bbox = eval(df.bbox.loc[index])
+        shape = (bbox[1]-bbox[0],bbox[3]-bbox[2],bbox[5]-bbox[4])
+        shapes.append(shape)
+    return shapes

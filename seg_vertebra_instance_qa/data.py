@@ -6,6 +6,7 @@ import random as rd
 import pandas as pd
 import numpy as np
 import tensorflow as tf
+import skimage.measure
 
 from SimpelNet import FCN_model
 
@@ -354,7 +355,7 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
 
     def __init__(self, df, batch_size=4, n_channels=2,
                  n_classes=4, shuffle=True, data_path=data_path, partition='train', aug_max_shift=0.1,
-                 min_shape_size=12, mode=None):
+                 min_shape_size=12, mode=None, down_sampling=False):
         'Initialization'
         self.batch_size = batch_size
         assert self.batch_size % 4 == 0, 'batch_size have to be a multiple of four.'
@@ -363,6 +364,7 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
         self.shuffle = shuffle
         self.min_shape_size = min_shape_size
         self.mode = mode
+        self.down_sampling = down_sampling
 
         self.partition = partition
         self.df = df.loc[df.partition == self.partition]
@@ -429,6 +431,24 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
             # Store sample
             arr = np.load(os.path.join(self.data_path, file_name))
             arr_ct = np.load(os.path.join(self.data_path, 'raw', file_name_bbox_ct_name))
+            # down_sample if options is set:
+            if self.down_sampling:
+                #do it only for case where all dim are higher than self.min_shape_size
+                if all(np.array(arr.shape) > self.min_shape_size):
+                    # find short axis, which should not be down sampeld
+                    short_axis = np.array(arr.shape).argmin()
+                    # check if long axes = not short axis longer as 24:
+                    axes = [0,1,2]
+                    axes.remove(short_axis)
+                    if (arr.shape[axes[0]] >= 24) and (arr.shape[axes[1]] >= 24):
+                        # define pooling kernel which ignore short axis
+                        pooling_kernel = [2,2,2]
+                        pooling_kernel[short_axis] = 1
+                        pooling_kernel = tuple(pooling_kernel)
+                        # pooling
+                        arr = skimage.measure.block_reduce(arr, pooling_kernel, np.mean)
+                        arr_ct = skimage.measure.block_reduce(arr_ct, pooling_kernel, np.mean)
+
             # normalize to [0,1]
             arr_norm = (arr - arr.min()) / (arr - arr.min()).max()
             arr_ct_norm = (arr_ct - arr_ct.min()) / (arr_ct - arr_ct.min()).max()
