@@ -51,7 +51,7 @@ def train(model, train_generator, val_generator, epochs=50):
     #                               validation_steps=len(val_generator))
 
     history = model.fit(
-        generator=train_generator,
+        x=train_generator,
         steps_per_epoch=len(train_generator),
         epochs=epochs,
         callbacks=[callback_checkpoint, callback_tensorboard, callback_early_stopping],
