@@ -537,13 +537,13 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
                 arr_ct = self.augmentation_rotate_volume(axes=axes_rot, angle=angle, volume=arr_ct_norm, mode='float')
 
 
-                # normalize to [0,1]
-                arr_norm = (arr - arr.min()) / (arr - arr.min()).max()
-                arr_ct_norm = (arr_ct - arr_ct.min()) / (arr_ct - arr_ct.min()).max()
-                # normalize to [-1,1]
-                arr_norm = arr_norm * 2 - 1
-                arr_ct_norm = arr_ct_norm * 2 - 1
-                # arr_norm = (arr_norm - arr_norm.mean())/arr.std()
+            # normalize to [0,1]
+            arr_norm = (arr - arr.min()) / (arr - arr.min()).max()
+            arr_ct_norm = (arr_ct - arr_ct.min()) / (arr_ct - arr_ct.min()).max()
+            # normalize to [-1,1]
+            arr_norm = arr_norm * 2 - 1
+            arr_ct_norm = arr_ct_norm * 2 - 1
+            # arr_norm = (arr_norm - arr_norm.mean())/arr.std()
 
             X_list.append(np.concatenate((arr_norm[...,None],arr_ct_norm[...,None]), axis=3))
             
