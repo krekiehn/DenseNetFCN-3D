@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 import skimage.measure
-
+from scipy import ndimage
 from SimpelNet import FCN_model
 
 # source: https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
@@ -355,7 +355,7 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
 
     def __init__(self, df, batch_size=4, n_channels=2,
                  n_classes=4, shuffle=True, data_path=data_path, partition='train', aug_max_shift=0.1,
-                 min_shape_size=12, mode=None, down_sampling=False):
+                 min_shape_size=12, mode=None, down_sampling=False, caching=True):
         'Initialization'
         self.batch_size = batch_size
         assert self.batch_size % 4 == 0, 'batch_size have to be a multiple of four.'
@@ -365,6 +365,9 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
         self.min_shape_size = min_shape_size
         self.mode = mode
         self.down_sampling = down_sampling
+        self.caching = caching
+        if self.caching:
+            self.cache = {}
 
         self.partition = partition
         self.df = df.loc[df.partition == self.partition]
@@ -424,13 +427,21 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
         y_list = []
         #print(list_IDs_temp)
         for ID in list_IDs_temp:
-            #
             # todo: load bbox from original CT and do the SAME augmentation on it
             file_name = self.df.loc[ID].instance_file
             file_name_bbox_ct_name = file_name.split('.')[0] + '_raw.' + file_name.split('.')[1]
             # Store sample
-            arr = np.load(os.path.join(self.data_path, file_name))
-            arr_ct = np.load(os.path.join(self.data_path, 'raw', file_name_bbox_ct_name))
+            if self.caching:
+                if ID in self.cache.keys():
+                    arr = self.cache[ID]['mask']
+                    arr_ct = self.cache[ID]['ct']
+                else:
+                    arr = np.load(os.path.join(self.data_path, file_name))
+                    arr_ct = np.load(os.path.join(self.data_path, 'raw', file_name_bbox_ct_name))
+                    self.cache[ID] = {'mask': arr, 'ct': arr_ct}
+            else:
+                arr = np.load(os.path.join(self.data_path, file_name))
+                arr_ct = np.load(os.path.join(self.data_path, 'raw', file_name_bbox_ct_name))
             # down_sample if options is set:
             if self.down_sampling:
                 #do it only for case where all dim are higher than self.min_shape_size
@@ -449,14 +460,9 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
                         arr = skimage.measure.block_reduce(arr, pooling_kernel, np.mean)
                         arr_ct = skimage.measure.block_reduce(arr_ct, pooling_kernel, np.mean)
 
-            # normalize to [0,1]
-            arr_norm = (arr - arr.min()) / (arr - arr.min()).max()
-            arr_ct_norm = (arr_ct - arr_ct.min()) / (arr_ct - arr_ct.min()).max()
-            # normalize to [-1,1]
-            arr_norm = arr_norm * 2 - 1
-            arr_ct_norm = arr_ct_norm * 2 - 1
-            # arr_norm = (arr_norm - arr_norm.mean())/arr.std()
-            
+            arr_norm = arr
+            arr_ct_norm = arr_ct
+
             # ToDo: add some kind of augmentation here. e.g. Rotation, Zoom, noise for segmentation mask???
             # add noise: values between arr_norm.min and arr_norm.max() - do this by model architecture
             if self.partition == 'train':
@@ -518,6 +524,27 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
                         arr_norm = arr_norm_tmp
                         arr_ct_norm = arr_ct_norm_tmp
                 # zoom in or out by xxx % of what?
+                #Rotation by free degree:
+
+                # define axes
+                axes = [0,1,2]
+                axis = rd.choice(axes)
+                axes.remove(axis)
+                axes_rot = tuple(axes)
+                # define some rotation angles
+                angle = rd.randint(-20, 20)
+                arr_norm = self.augmentation_rotate_volume(axes=axes_rot, angle=angle, volume=arr_norm, mode='int')
+                arr_ct_norm = self.augmentation_rotate_volume(axes=axes_rot, angle=angle, volume=arr_ct_norm, mode='float')
+
+
+                # normalize to [0,1]
+                arr_norm = (arr - arr.min()) / (arr - arr.min()).max()
+                arr_ct_norm = (arr_ct - arr_ct.min()) / (arr_ct - arr_ct.min()).max()
+                # normalize to [-1,1]
+                arr_norm = arr_norm * 2 - 1
+                arr_ct_norm = arr_ct_norm * 2 - 1
+                # arr_norm = (arr_norm - arr_norm.mean())/arr.std()
+
             X_list.append(np.concatenate((arr_norm[...,None],arr_ct_norm[...,None]), axis=3))
             
             # Store class
@@ -560,6 +587,28 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
             print(f'Number of classes {cla} cases: {len(_)}')
         return df_classes_split_list
 
+    def augmentation_rotate_volume(self, axes, angle, volume, mode='float'):
+        # define axes
+        # axes = [0,1,2]
+        # axis = random.choice(axes)
+        # axes.remove(axis)
+        axes_rot = tuple(axes)
+        # define some rotation angles
+        # angle = random.randint(-20, 20)
+        if angle == 0:
+            return volume
+        # rotate volume
+        if mode=='float':
+            volume = ndimage.rotate(volume, angle, reshape=False, axes=axes_rot)
+            # volume[volume < 0] = 0
+            # volume[volume > 1] = 1
+        elif mode=='int':
+            volume_ont_hot = tf.one_hot(volume, self.n_classes)
+            # do rot
+            volume_ont_hot = ndimage.rotate(volume_ont_hot, angle, reshape=False, axes=axes_rot)
+            volume_ont_hot_softmax = tf.nn.softmax(volume_ont_hot)
+            volume = np.argmax(volume_ont_hot_softmax, axis=-1)
+        return volume
 
 
 
