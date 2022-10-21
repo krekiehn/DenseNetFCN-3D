@@ -533,8 +533,8 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
                 axes_rot = tuple(axes)
                 # define some rotation angles
                 angle = rd.randint(-20, 20)
-                arr_norm = self.augmentation_rotate_volume(axes=axes_rot, angle=angle, volume=arr_norm, mode='int')
-                arr_ct_norm = self.augmentation_rotate_volume(axes=axes_rot, angle=angle, volume=arr_ct_norm, mode='float')
+                arr = self.augmentation_rotate_volume(axes=axes_rot, angle=angle, volume=arr_norm, mode='int')
+                arr_ct = self.augmentation_rotate_volume(axes=axes_rot, angle=angle, volume=arr_ct_norm, mode='float')
 
 
                 # normalize to [0,1]
