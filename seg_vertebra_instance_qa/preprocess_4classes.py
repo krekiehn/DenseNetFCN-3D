@@ -3,6 +3,7 @@ import os
 import SimpleITK as sitk
 import numpy as np
 from tqdm import tqdm
+import random
 
 df_gt_ct = pd.read_csv(r'S:\Data\VerSe_full\nnunet\output\281\df_instance_5.csv')
 df_gt_ct = df_gt_ct.loc[df_gt_ct.gt_ct.dropna().index]
@@ -33,6 +34,65 @@ def synchronize_gt_ct_bbox_label():
     
     return df_label
 
+
+def sync_peeling5_df():
+    df_1 = pd.read_csv(r'S:\Data\VerSe_full\nnunet\output\281\df_instance_4_classes_label_manuel_partition_bbox_shape.csv')
+    df_5 = pd.read_csv(r'S:\Data\VerSe_full\nnunet\output\281\df_instance_4_classes_label_5.csv')
+    df_5_bbox = pd.read_csv(r'S:\Data\VerSe_full\nnunet\output\281\df_instance_4_classes_label_5_bbox_export.csv')
+    
+    df_5_new_col = ['manuel_checked', 'bbox', 'bbox_shape', 'partition', 'gt_raw_ct_file',
+       'rel_path_raw_file', 'rel_path_seg_file', 'volume']
+    
+    df_1_use_col = ['manuel_checked', 'partition', 'label']
+    df_5_bbox_use_col = ['gt_raw_ct_file', 'rel_path_raw_file', 'rel_path_seg_file', 'volume', 'bbox', 'bbox_shape']
+    
+    for col in df_5_new_col:
+        df_5[col] = [pd.NA]*len(df_5)
+    
+    for index in df_1.index:
+        case_id = df_1.case_id.loc[index]
+        instance_id = df_1.instance_id.loc[index]
+        
+        index_5 = df_5[(df_5.case_id == case_id) & (df_5.instance_id == instance_id) & (df_5.peeling == 1)].index.values[0]
+        
+        for col in df_1_use_col:
+            df_5[col].loc[index_5] = df_1[col].loc[index]
+
+    for index in df_5_bbox.index:
+        assert df_5.case_id.loc[index] == df_5_bbox.case_id.loc[index] , f"Case Ids don't match: {df_5.case_id.loc[index]}, {df_5_bbox.case_id.loc[index]}"
+        assert df_5.instance_id.loc[index] == df_5_bbox.instance_id.loc[index] , f"instance_id don't match: {df_5.instance_id.loc[index]}, {df_5_bbox.instance_id.loc[index]}"
+        assert df_5.peeling.loc[index] == df_5_bbox.peeling.loc[index] , f"peeling don't match: {df_5.peeling.loc[index]}, {df_5_bbox.peeling.loc[index]}"
+
+        for col in df_5_bbox_use_col:
+            df_5[col].loc[index] = df_5_bbox[col].loc[index]
+
+    return df_1, df_5, df_5_bbox
+
+
+def classes_4_peeling_5_partition():
+    df_5 = pd.read_csv(r'S:\Data\VerSe_full\nnunet\output\281\df_instance_4_classes_label_5_manuel.csv')
+    split = [0.8, 0.1, 0.1]
+    df = df_5[df_5.partition.isna()]
+    classes = [0,1,2,3]
+    
+    train = []
+    vali = []
+    test = []
+    
+    for cla in classes:
+        indices = list(df[df.label == cla].index)
+        random.shuffle(indices)
+        
+        train += indices[ : int(np.ceil(len(indices)*split[0]))]
+        vali += indices[int(np.ceil(len(indices)*split[0])) : int(np.ceil(len(indices)*(split[1]+split[0])))]
+        test += indices[int(np.ceil(len(indices)*(split[1]+split[0]))) :]
+    
+    #d = {train: 'train', vali: 'vali', test: 'test'}
+    for pati, val in zip([train, vali, test], ['train', 'vali', 'test']):
+        #val = d[pati]
+        for i in pati:
+            df_5.partition.loc[i] = val
+    return df_5
 
 def build_verse_snipet_bbox(verse_data_path = r'S:\Data\VerSe_full', output_data_path = r'S:\Data\VerSe_full\nnunet\output\281\segmentation_instance_masks\raw'):
     # ToDo:
@@ -113,7 +173,6 @@ def build_verse_snipet_bbox(verse_data_path = r'S:\Data\VerSe_full', output_data
         # sitk.WriteImage(cropper, raw_ct_bbox_nifti_file_path)
         
     #return ct, ct_arr_bbox_nii
-    
     
 def shape_size_from_bbox():
     shapes = []

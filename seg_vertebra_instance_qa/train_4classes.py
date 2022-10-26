@@ -76,7 +76,7 @@ if __name__ == '__main__':
         # tf.keras.mixed_precision.set_global_policy('mixed_float16')
         # os.environ['TF_GPU_ALLOCATOR'] = 'cuda_malloc_async'
         if len(tf.config.get_visible_devices('GPU')) > 1:
-            print(f"MULTI GPU ON: No. GPUs {len(tf.config.get_visible_devices('GPU'))}")
+            print(f"MULTI GPU ON: No. GPUs {len(tf.config.get_visible_devices('GPU')):.^20}")
 
             mirrored_strategy = tf.distribute.MirroredStrategy()
             print("num_replicas_in_sync: ", mirrored_strategy.num_replicas_in_sync)
@@ -104,7 +104,8 @@ if __name__ == '__main__':
                       loss='categorical_crossentropy',
                       metrics=['accuracy'])
 
-    df_data = pd.read_csv(os.path.join(dataframe_file_path, dataframe_file_4classes), index_col='index')
+    # df_data = pd.read_csv(os.path.join(dataframe_file_path, dataframe_file_4classes), index_col='index')
+    df_data = pd.read_csv(os.path.join(dataframe_file_path, dataframe_file_4classes))
 
     batch_size = int(input('Batch size?'))*4
     
@@ -114,11 +115,11 @@ if __name__ == '__main__':
         pass
     
     train_generator = DataGenerator_4_classes(df_data, partition='train', batch_size=batch_size, n_channels=2, n_classes=4,
-                                              down_sampling=True)
+                                              down_sampling=True, data_source_mode='direct')
     val_generator = DataGenerator_4_classes(df_data, partition='vali', batch_size=batch_size, n_channels=2, n_classes=4,
-                                            down_sampling=True)
+                                            down_sampling=True, data_source_mode='direct')
     test_generator = DataGenerator_4_classes(df_data, partition='test', batch_size=batch_size, n_channels=2, n_classes=4,
-                                             down_sampling=True)
+                                             down_sampling=True, data_source_mode='direct')
 
     h = train(model_fcn, train_generator, val_generator, epochs=1000)
 

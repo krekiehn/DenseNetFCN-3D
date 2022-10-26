@@ -355,7 +355,7 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
 
     def __init__(self, df, batch_size=4, n_channels=2,
                  n_classes=4, shuffle=True, data_path=data_path, partition='train', aug_max_shift=0.1,
-                 min_shape_size=12, mode=None, down_sampling=False, caching=True):
+                 min_shape_size=12, mode=None, down_sampling=False, caching=True, data_source_mode='indirect'):
         'Initialization'
         self.batch_size = batch_size
         assert self.batch_size % 4 == 0, 'batch_size have to be a multiple of four.'
@@ -364,6 +364,10 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
         self.shuffle = shuffle
         self.min_shape_size = min_shape_size
         self.mode = mode
+        self.data_path = data_path
+        self.data_source_mode = data_source_mode
+        if self.data_source_mode == 'direct':
+            self.data_path = os.path.dirname(self.data_path)
         self.down_sampling = down_sampling
         self.caching = caching
         if self.caching:
@@ -375,8 +379,6 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
         self.list_df_indices = [[] for i in range(self.n_classes)]
         for cla in range(self.n_classes):
             self.re_init_indices_df(cla=cla)
-
-        self.data_path = data_path
 
         self.aug_max_shift = aug_max_shift
 
@@ -428,16 +430,26 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
         #print(list_IDs_temp)
         for ID in list_IDs_temp:
             # todo: load bbox from original CT and do the SAME augmentation on it
-            file_name = self.df.loc[ID].instance_file
-            file_name_bbox_ct_name = file_name.split('.')[0] + '_raw.' + file_name.split('.')[1]
+            if self.data_source_mode == 'indirect':
+                file_name = self.df.loc[ID].instance_file
+                file_name_bbox_ct_name = file_name.split('.')[0] + '_raw.' + file_name.split('.')[1]
+            elif self.data_source_mode == 'direct':
+                file_name = self.df.rel_path_seg_file.loc[ID]
+                file_name_bbox_ct_name = self.df.rel_path_raw_file.loc[ID]
+            else:
+                raise Exception(f"data_source_mode does not support: {self.data_source_mode}")
             # Store sample
             if self.caching:
                 if ID in self.cache.keys():
                     arr = self.cache[ID]['mask']
                     arr_ct = self.cache[ID]['ct']
                 else:
-                    arr = np.load(os.path.join(self.data_path, file_name))
-                    arr_ct = np.load(os.path.join(self.data_path, 'raw', file_name_bbox_ct_name))
+                    if self.data_source_mode == 'indirect':
+                        arr = np.load(os.path.join(self.data_path, file_name))
+                        arr_ct = np.load(os.path.join(self.data_path, 'raw', file_name_bbox_ct_name))
+                    elif self.data_source_mode == 'direct':
+                        arr = np.load(os.path.join(self.data_path, file_name))
+                        arr_ct = np.load(os.path.join(self.data_path, file_name_bbox_ct_name))
                     self.cache[ID] = {'mask': arr, 'ct': arr_ct}
             else:
                 arr = np.load(os.path.join(self.data_path, file_name))
