@@ -14,7 +14,7 @@ elif os.path.isdir(r'/home/sukin699/Verse/Verse_full/nnunet/output/281'):
     dataframe_file_path = r'/home/sukin699/Verse/Verse_full/nnunet/output/281'
     dataframe_file = r'seg_instance_masks_dataframe_manuel.csv'
     dataframe_file_4classes = r'df_instance_4_classes_label_manuel_partition_bbox.csv'
-    dataframe_file_4classes = r'df_instance_4_classes_label_5_manuel.csv'
+    dataframe_file_4classes = r'df_instance_4_classes_label_5_manuel_unix.csv'
     data_path = r'/home/sukin699/Verse/Verse_full/nnunet/output/281/segmentation_instance_masks'
     multi_gpu_flag = 1
     
