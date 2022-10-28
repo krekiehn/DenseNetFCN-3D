@@ -407,6 +407,12 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
         # Generate data
         X, y = self.__data_generation(indices_4_batch_list)
 
+        if np.isnan(X).sum() != 0:
+            for b in range(X.shape[0]):
+                if np.isnan(X[b,:,:,:,0]).sum() != 0:
+                    print('seg mask', indices_4_batch_list[b])
+                if np.isnan(X[b, :, :, :, 1]).sum() != 0:
+                    print('raw', indices_4_batch_list[b])
         assert np.isnan(X).sum() == 0, f"NaNs: {np.isnan(X).sum()}, X {indices_4_batch_list} includes NaN. {X.shape}"
         assert np.isnan(y).sum() == 0, f"y {indices_4_batch_list} includes NaN. {y}"
         return X, y
@@ -443,8 +449,6 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
                 if ID in self.cache.keys():
                     arr = self.cache[ID]['mask']
                     arr_ct = self.cache[ID]['ct']
-                    # set all values in seg mask to 1 (mask) or 0 (background)
-                    arr[arr != 0] = 1
                 else:
                     if self.data_source_mode == 'indirect':
                         arr = np.load(os.path.join(self.data_path, file_name))
@@ -452,12 +456,18 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
                     elif self.data_source_mode == 'direct':
                         arr = np.load(os.path.join(self.data_path, file_name))
                         arr_ct = np.load(os.path.join(self.data_path, file_name_bbox_ct_name))
+                    # set all values in seg mask to 1 (mask) or 0 (background)
+                    label = self.df.instance_id.loc[ID]
+                    arr[arr != label] = 0
+                    arr[arr == label] = 1
                     self.cache[ID] = {'mask': arr, 'ct': arr_ct}
             else:
                 arr = np.load(os.path.join(self.data_path, file_name))
                 arr_ct = np.load(os.path.join(self.data_path, 'raw', file_name_bbox_ct_name))
                 # set all values in seg mask to 1 (mask) or 0 (background)
-                arr[arr != 0] = 1
+                label = self.df.instance_id.loc[ID]
+                arr[arr != label] = 0
+                arr[arr == label] = 1
             # down_sample if options is set:
             if self.down_sampling:
                 #do it only for case where all dim are higher than self.min_shape_size
@@ -540,22 +550,24 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
                         arr_norm = arr_norm_tmp
                         arr_ct_norm = arr_ct_norm_tmp
                 # zoom in or out by xxx % of what?
+
                 #Rotation by free degree:
+                if np.array(arr_ct.shape).min() >= self.min_shape_size:
+                    # define axes
+                    axes = [0,1,2]
+                    axis = rd.choice(axes)
+                    axes.remove(axis)
+                    axes_rot = tuple(axes)
+                    # define some rotation angles
+                    angle = rd.randint(-45, 45)
+                    arr_norm = self.augmentation_rotate_volume(axes=axes_rot, angle=angle, volume=arr_norm, mode='int')
+                    arr_ct_norm = self.augmentation_rotate_volume(axes=axes_rot, angle=angle, volume=arr_ct_norm, mode='float')
 
-                # define axes
-                axes = [0,1,2]
-                axis = rd.choice(axes)
-                axes.remove(axis)
-                axes_rot = tuple(axes)
-                # define some rotation angles
-                angle = rd.randint(-20, 20)
-                arr = self.augmentation_rotate_volume(axes=axes_rot, angle=angle, volume=arr_norm, mode='int')
-                arr_ct = self.augmentation_rotate_volume(axes=axes_rot, angle=angle, volume=arr_ct_norm, mode='float')
-
-
+            
             # normalize to [0,1]
             # arr_norm = (arr - arr.min()) / (arr - arr.min()).max()
-            arr_ct_norm = (arr_ct - arr_ct.min()) / (arr_ct - arr_ct.min()).max()
+            assert (arr_ct_norm - arr_ct_norm.min()).max() > 0, f"all values zero for ct with index {ID}."
+            arr_ct_norm = (arr_ct_norm - arr_ct_norm.min()) / (arr_ct_norm - arr_ct_norm.min()).max()
             # normalize to [-1,1]
             arr_norm = arr_norm * 2 - 1
             arr_ct_norm = arr_ct_norm * 2 - 1
