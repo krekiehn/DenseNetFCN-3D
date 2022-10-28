@@ -443,6 +443,8 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
                 if ID in self.cache.keys():
                     arr = self.cache[ID]['mask']
                     arr_ct = self.cache[ID]['ct']
+                    # set all values in seg mask to 1 (mask) or 0 (background)
+                    arr[arr != 0] = 1
                 else:
                     if self.data_source_mode == 'indirect':
                         arr = np.load(os.path.join(self.data_path, file_name))
@@ -454,6 +456,8 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
             else:
                 arr = np.load(os.path.join(self.data_path, file_name))
                 arr_ct = np.load(os.path.join(self.data_path, 'raw', file_name_bbox_ct_name))
+                # set all values in seg mask to 1 (mask) or 0 (background)
+                arr[arr != 0] = 1
             # down_sample if options is set:
             if self.down_sampling:
                 #do it only for case where all dim are higher than self.min_shape_size
@@ -550,7 +554,7 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
 
 
             # normalize to [0,1]
-            arr_norm = (arr - arr.min()) / (arr - arr.min()).max()
+            # arr_norm = (arr - arr.min()) / (arr - arr.min()).max()
             arr_ct_norm = (arr_ct - arr_ct.min()) / (arr_ct - arr_ct.min()).max()
             # normalize to [-1,1]
             arr_norm = arr_norm * 2 - 1
