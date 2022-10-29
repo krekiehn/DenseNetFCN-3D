@@ -20,8 +20,8 @@ parameters = {
 def train(model, train_generator, val_generator, epochs=50):
     checkpoint_path = './snapshots_4classes_5'
     os.makedirs(checkpoint_path, exist_ok=True)
-    model_path = os.path.join(checkpoint_path,
-                              'model_epoch_{epoch:02d}_loss_{loss:.2f}_acc_{accuracy:.2f}_val_loss_{val_loss:.2f}_val_acc_{val_accuracy:.2f}.h5')
+    # model_path = os.path.join(checkpoint_path, 'model_epoch_{epoch:02d}_loss_{loss:.2f}_acc_{accuracy:.2f}_val_loss_{val_loss:.2f}_val_acc_{val_accuracy:.2f}.h5')
+    model_path = os.path.join(checkpoint_path, 'model_epoch_{epoch:02d}_loss_{loss:.2f}_acc_{accuracy:.2f}.h5')
 
     log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
