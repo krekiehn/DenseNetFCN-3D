@@ -57,7 +57,7 @@ def train(model, train_generator, val_generator, epochs=50):
         epochs=epochs,
         callbacks=[callback_checkpoint, callback_tensorboard, callback_early_stopping],
         validation_data=val_generator,
-        validation_steps=len(val_generator))
+        validation_steps=len(val_generator)-1)
 
     model_dir = r'./saved_model'
     os.makedirs(model_dir, exist_ok=True)
