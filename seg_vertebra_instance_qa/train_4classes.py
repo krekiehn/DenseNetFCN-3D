@@ -121,5 +121,6 @@ if __name__ == '__main__':
     test_generator = DataGenerator_4_classes(df_data, partition='test', batch_size=batch_size, n_channels=2, n_classes=4,
                                              down_sampling=True, data_source_mode='direct')
 
-    h = train(model_fcn, train_generator, val_generator, epochs=1000)
+    print(val_generator[0])
+    #h = train(model_fcn, train_generator, val_generator, epochs=1000)
 
