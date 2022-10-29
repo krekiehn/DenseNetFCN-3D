@@ -390,7 +390,7 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
         lens = []
         for cla in range(self.n_classes):
             lens.append(int(np.floor(len(self.list_df_indices[cla]) / self.batch_size)))
-        return np.max(lens)
+        return np.max(lens) - 1
 
     def __getitem__(self, index):
         'Generate one batch of data'
