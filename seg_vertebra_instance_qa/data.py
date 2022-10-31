@@ -427,6 +427,47 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
         for cla in range(self.n_classes):
             self.re_init_indices_df(cla)
 
+    def __load(self, file_name, file_name_bbox_ct_name, ID):
+        if self.data_source_mode == 'indirect':
+            arr = np.load(os.path.join(self.data_path, file_name))
+            arr_ct = np.load(os.path.join(self.data_path, 'raw', file_name_bbox_ct_name))
+        elif self.data_source_mode == 'direct':
+            arr = np.load(os.path.join(self.data_path, file_name))
+            arr_ct = np.load(os.path.join(self.data_path, file_name_bbox_ct_name))
+        else:
+            assert False, f"Error: unkown data_source_mode {self.data_source_mode}!"
+        # set all values in seg mask to 1 (mask) or 0 (background)
+        label = self.df.instance_id.loc[ID]
+        arr[arr != label] = 0
+        arr[arr == label] = 1
+
+        if self.down_sampling:
+            # do it only for case where all dim are higher than self.min_shape_size
+            if all(np.array(arr.shape) > self.min_shape_size):
+                # find short axis, which should not be down sampeld
+                short_axis = np.array(arr.shape).argmin()
+                # check if long axes = not short axis longer as 24:
+                axes = [0, 1, 2]
+                axes.remove(short_axis)
+                if (arr.shape[axes[0]] >= 24) and (arr.shape[axes[1]] >= 24):
+                    # define pooling kernel which ignore short axis
+                    pooling_kernel = [2, 2, 2]
+                    pooling_kernel[short_axis] = 1
+                    pooling_kernel = tuple(pooling_kernel)
+
+                    # pooling
+
+                    def mean_round(x, axis=None):
+                        return int(np.round(np.mean(x, axis=axis)))
+
+                    arr = skimage.measure.block_reduce(arr, pooling_kernel, mean_round)
+                    arr_ct = skimage.measure.block_reduce(arr_ct, pooling_kernel, np.mean)
+
+        if self.caching:
+            self.cache[ID] = {'mask': arr, 'ct': arr_ct}
+        return arr, arr_ct
+
+
     def __data_generation(self, list_IDs_temp):
         'Generates data containing batch_size samples'
         # X : (n_samples, *dim, n_channels)
@@ -450,41 +491,43 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
                     arr = self.cache[ID]['mask']
                     arr_ct = self.cache[ID]['ct']
                 else:
-                    if self.data_source_mode == 'indirect':
-                        arr = np.load(os.path.join(self.data_path, file_name))
-                        arr_ct = np.load(os.path.join(self.data_path, 'raw', file_name_bbox_ct_name))
-                    elif self.data_source_mode == 'direct':
-                        arr = np.load(os.path.join(self.data_path, file_name))
-                        arr_ct = np.load(os.path.join(self.data_path, file_name_bbox_ct_name))
-                    # set all values in seg mask to 1 (mask) or 0 (background)
-                    label = self.df.instance_id.loc[ID]
-                    arr[arr != label] = 0
-                    arr[arr == label] = 1
-                    self.cache[ID] = {'mask': arr, 'ct': arr_ct}
+                    arr, arr_ct = self.__load(file_name, file_name_bbox_ct_name, ID)
+                    # if self.data_source_mode == 'indirect':
+                    #     arr = np.load(os.path.join(self.data_path, file_name))
+                    #     arr_ct = np.load(os.path.join(self.data_path, 'raw', file_name_bbox_ct_name))
+                    # elif self.data_source_mode == 'direct':
+                    #     arr = np.load(os.path.join(self.data_path, file_name))
+                    #     arr_ct = np.load(os.path.join(self.data_path, file_name_bbox_ct_name))
+                    # # set all values in seg mask to 1 (mask) or 0 (background)
+                    # label = self.df.instance_id.loc[ID]
+                    # arr[arr != label] = 0
+                    # arr[arr == label] = 1
+                    # self.cache[ID] = {'mask': arr, 'ct': arr_ct}
             else:
-                arr = np.load(os.path.join(self.data_path, file_name))
-                arr_ct = np.load(os.path.join(self.data_path, 'raw', file_name_bbox_ct_name))
-                # set all values in seg mask to 1 (mask) or 0 (background)
-                label = self.df.instance_id.loc[ID]
-                arr[arr != label] = 0
-                arr[arr == label] = 1
-            # down_sample if options is set:
-            if self.down_sampling:
-                #do it only for case where all dim are higher than self.min_shape_size
-                if all(np.array(arr.shape) > self.min_shape_size):
-                    # find short axis, which should not be down sampeld
-                    short_axis = np.array(arr.shape).argmin()
-                    # check if long axes = not short axis longer as 24:
-                    axes = [0,1,2]
-                    axes.remove(short_axis)
-                    if (arr.shape[axes[0]] >= 24) and (arr.shape[axes[1]] >= 24):
-                        # define pooling kernel which ignore short axis
-                        pooling_kernel = [2,2,2]
-                        pooling_kernel[short_axis] = 1
-                        pooling_kernel = tuple(pooling_kernel)
-                        # pooling
-                        arr = skimage.measure.block_reduce(arr, pooling_kernel, np.mean)
-                        arr_ct = skimage.measure.block_reduce(arr_ct, pooling_kernel, np.mean)
+                arr, arr_ct = self.__load(file_name, file_name_bbox_ct_name, ID)
+                # arr = np.load(os.path.join(self.data_path, file_name))
+                # arr_ct = np.load(os.path.join(self.data_path, 'raw', file_name_bbox_ct_name))
+                # # set all values in seg mask to 1 (mask) or 0 (background)
+                # label = self.df.instance_id.loc[ID]
+                # arr[arr != label] = 0
+                # arr[arr == label] = 1
+            ## down_sample if options is set:
+            # if self.down_sampling:
+            #     #do it only for case where all dim are higher than self.min_shape_size
+            #     if all(np.array(arr.shape) > self.min_shape_size):
+            #         # find short axis, which should not be down sampeld
+            #         short_axis = np.array(arr.shape).argmin()
+            #         # check if long axes = not short axis longer as 24:
+            #         axes = [0, 1, 2]
+            #         axes.remove(short_axis)
+            #         if (arr.shape[axes[0]] >= 24) and (arr.shape[axes[1]] >= 24):
+            #             # define pooling kernel which ignore short axis
+            #             pooling_kernel = [2, 2, 2]
+            #             pooling_kernel[short_axis] = 1
+            #             pooling_kernel = tuple(pooling_kernel)
+            #             # pooling
+            #             arr = skimage.measure.block_reduce(arr, pooling_kernel, np.mean)
+            #             arr_ct = skimage.measure.block_reduce(arr_ct, pooling_kernel, np.mean)
 
             arr_norm = arr
             arr_ct_norm = arr_ct
@@ -547,7 +590,7 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
                     else:
                         continue
                     # check if at least one pixel positive value
-                    if np.any(arr == 1):
+                    if np.any(arr_norm_tmp == 1):
                         arr_norm = arr_norm_tmp
                         arr_ct_norm = arr_ct_norm_tmp
                 # zoom in or out by xxx % of what?
@@ -567,8 +610,14 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
             
             # normalize to [0,1]
             # arr_norm = (arr - arr.min()) / (arr - arr.min()).max()
-            assert (arr_ct_norm - arr_ct_norm.min()).max() > 0, f"all values zero for ct with index {ID}."
-            arr_ct_norm = (arr_ct_norm - arr_ct_norm.min()) / (arr_ct_norm - arr_ct_norm.min()).max()
+            # assert (arr_ct_norm - arr_ct_norm.min()).max() > 0, f"all values zero for ct with index {ID}."
+            # arr_ct_norm = (arr_ct_norm - arr_ct_norm.min()) / (arr_ct_norm - arr_ct_norm.min()).max()
+            # normilaize to houndsfield unit range bone
+            limit_bottom = 100
+            arr_ct_norm[arr_ct_norm > limit_bottom] = limit_bottom
+            limit_up = 1000
+            arr_ct_norm[arr_ct_norm > limit_up] = limit_up
+            arr_ct_norm = (arr_ct_norm - limit_bottom) / (limit_up - limit_bottom)
             # normalize to [-1,1]
             arr_norm = arr_norm * 2 - 1
             arr_ct_norm = arr_ct_norm * 2 - 1
