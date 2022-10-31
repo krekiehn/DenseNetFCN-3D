@@ -460,7 +460,7 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
                     def mean_round(x, axis=None):
                         return int(np.round(np.mean(x, axis=axis)))
 
-                    arr = skimage.measure.block_reduce(arr, pooling_kernel, mean_round)
+                    arr = skimage.measure.block_reduce(arr, pooling_kernel, np.max)
                     arr_ct = skimage.measure.block_reduce(arr_ct, pooling_kernel, np.mean)
 
         if self.caching:
