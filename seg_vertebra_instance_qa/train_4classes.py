@@ -122,5 +122,5 @@ if __name__ == '__main__':
                                              down_sampling=True, data_source_mode='direct')
 
     # print(val_generator[0])
-    #h = train(model_fcn, train_generator, val_generator, epochs=1000)
+    h = train(model_fcn, train_generator, val_generator, epochs=1000)
 
