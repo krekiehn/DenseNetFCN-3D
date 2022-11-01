@@ -534,7 +534,8 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
 
             # ToDo: add some kind of augmentation here. e.g. Rotation, Zoom, noise for segmentation mask???
             # add noise: values between arr_norm.min and arr_norm.max() - do this by model architecture
-            if self.partition == 'train':
+            # if self.partition == 'train':
+            if self.partition == 'false':
                 # ToDo: add elastic deformity to seg mask, source: https://dltk.github.io/DLTK/api/dltk.io.html#dltk.io.augmentation.elastic_transform
                 # rot90 0 to 3 times for 0 to 3 axis
                 # how many axis?
