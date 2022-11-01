@@ -614,7 +614,7 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
             # arr_ct_norm = (arr_ct_norm - arr_ct_norm.min()) / (arr_ct_norm - arr_ct_norm.min()).max()
             # normilaize to houndsfield unit range bone
             limit_bottom = -1000
-            arr_ct_norm[arr_ct_norm > limit_bottom] = limit_bottom
+            arr_ct_norm[arr_ct_norm < limit_bottom] = limit_bottom
             limit_up = 1000
             arr_ct_norm[arr_ct_norm > limit_up] = limit_up
             arr_ct_norm = (arr_ct_norm - limit_bottom) / (limit_up - limit_bottom)
