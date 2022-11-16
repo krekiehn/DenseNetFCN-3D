@@ -1,7 +1,7 @@
 # init a FCN Model for training and later inference?
 #from DenseNet3D import DenseNet3D_FCN
 from SimpelNet import FCN_model
-from data import DataGenerator, DataGenerator_performance
+from data import DataGenerator, DataGenerator_performance, DataGenerator_4_classes_performance
 import tensorflow as tf
 import pandas as pd
 import numpy as np
@@ -57,8 +57,8 @@ def init_model(model, checkpoint_path=r'seg_vertebra_instance_qa\model_epoch_02_
 
 
 if __name__ == '__main__':
-    model_fcn = FCN_model(len_classes=3)
-    model_fcn.summary()
+    # model_fcn = FCN_model(len_classes=4)
+    # model_fcn.summary()
 
     df_data = pd.read_csv(os.path.join(dataframe_file_path, dataframe_file), index_col='index',
                           dtype={"Ids": str, "status": int})
@@ -67,7 +67,17 @@ if __name__ == '__main__':
     # train_generator = DataGenerator(df_data, partition='train', batch_size=batch_size)
     # val_generator = DataGenerator(df_data, partition='vali', batch_size=batch_size)
     # test_generator = DataGenerator(df_data, partition='test', batch_size=batch_size)
-    model_fcn = init_model(model_fcn)
-    val_generator = DataGenerator_performance(df_data, partition='vali', batch_size=1)
-    # model = inference(model_fcn, val_generator)
+    #model_fcn = init_model(model_fcn)
+
+    model = tf.keras.models.load_model(r'S:\Data\VerSe_full\nnunet\output\281\segmentation_instance_masks\model_weights\model_epoch_72_loss_0.32_acc_0.87_val_loss_0.47_val_acc_0.85.h5')
+    model.compile(optimizer=tf.keras.optimizers.Adam(lr=0.0001),
+                      loss='categorical_crossentropy',
+                      metrics=['accuracy'])
+    # val_generator = DataGenerator_4_classes_performance(df_data, partition='vali', batch_size=1)
+    dataframe_file_4classes_df = pd.read_csv(os.path.join(dataframe_file_path, dataframe_file_4classes))
+    val_generator = DataGenerator_4_classes_performance(dataframe_file_4classes_df, partition='vali', batch_size=batch_size, n_channels=2, n_classes=4,
+                                            down_sampling=True, data_source_mode='direct')
+    loss, acc = model.evaluate(val_generator, verbose=2)
+    print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
+    #model = inference(model_fcn, val_generator, checkpoint_path=r'S:\Data\VerSe_full\nnunet\output\281\segmentation_instance_masks\model_weights\model_epoch_72_loss_0.32_acc_0.87_val_loss_0.47_val_acc_0.85.h5')
 

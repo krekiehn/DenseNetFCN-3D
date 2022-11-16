@@ -690,6 +690,203 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
         return volume
 
 
+class DataGenerator_4_classes_performance(tf.keras.utils.Sequence):
+    'Generates data for Keras'
+
+    def __init__(self, df, batch_size=1, n_channels=2,
+                 n_classes=4, shuffle=True, data_path=data_path, partition='vali', aug_max_shift=0.1,
+                 min_shape_size=12, mode=None, down_sampling=False, caching=True, data_source_mode='indirect'):
+        'Initialization'
+        self.batch_size = batch_size
+        # assert self.batch_size % 4 == 0, 'batch_size have to be a multiple of four.'
+        self.n_channels = n_channels
+        self.n_classes = n_classes
+        self.shuffle = shuffle
+        self.min_shape_size = min_shape_size
+        self.mode = mode
+        self.data_path = data_path
+        self.data_source_mode = data_source_mode
+        if self.data_source_mode == 'direct':
+            self.data_path = os.path.dirname(self.data_path)
+        self.down_sampling = down_sampling
+        self.caching = caching
+        if self.caching:
+            self.cache = {}
+
+        self.partition = partition
+        self.df = df.loc[(df.partition == self.partition) & (df.peeling == 1)]
+        self.df_classes_split_list = self.split_cases_in_classes()
+        self.list_df_indices = [[] for i in range(self.n_classes)]
+        for cla in range(self.n_classes):
+            self.re_init_indices_df(cla=cla)
+        self.list_indices = list(self.df.index.values)
+
+        self.aug_max_shift = aug_max_shift
+
+        self.on_epoch_end()
+        self.len = self.__len__()
+
+    def __len__(self):
+        'Denotes the number of batches per epoch'
+        return int(np.floor(len(self.list_indices)  / self.batch_size))
+
+    def __getitem__(self, index):
+        'Generate one batch of data'
+        # Generate indexes of the batch
+        # indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
+        indices_4_batch_list = []
+        for i in range(self.batch_size):
+            indices_4_batch_list.append(self.list_indices.pop())
+
+        # Generate data
+        X, y = self.__data_generation(indices_4_batch_list)
+
+        if np.isnan(X).sum() != 0:
+            for b in range(X.shape[0]):
+                if np.isnan(X[b, :, :, :, 0]).sum() != 0:
+                    print('seg mask', indices_4_batch_list[b])
+                if np.isnan(X[b, :, :, :, 1]).sum() != 0:
+                    print('raw', indices_4_batch_list[b])
+        assert np.isnan(X).sum() == 0, f"NaNs: {np.isnan(X).sum()}, X {indices_4_batch_list} includes NaN. {X.shape}"
+        assert np.isnan(y).sum() == 0, f"y {indices_4_batch_list} includes NaN. {y}"
+        return X, y
+
+    def re_init_indices_df(self, cla):
+        self.list_df_indices[cla] = list(self.df_classes_split_list[cla].index.values)
+        if self.shuffle:
+            rd.shuffle(self.list_df_indices[cla])
+
+    def on_epoch_end(self):
+        'Updates indexes after each epoch'
+        self.list_indices = list(self.df.index.values)
+
+    def __load(self, file_name, file_name_bbox_ct_name, ID):
+        if self.data_source_mode == 'indirect':
+            arr = np.load(os.path.join(self.data_path, file_name))
+            arr_ct = np.load(os.path.join(self.data_path, 'raw', file_name_bbox_ct_name))
+        elif self.data_source_mode == 'direct':
+            arr = np.load(os.path.join(self.data_path, file_name))
+            arr_ct = np.load(os.path.join(self.data_path, file_name_bbox_ct_name))
+        else:
+            assert False, f"Error: unkown data_source_mode {self.data_source_mode}!"
+        # set all values in seg mask to 1 (mask) or 0 (background)
+        label = self.df.instance_id.loc[ID]
+        arr[arr != label] = 0
+        arr[arr == label] = 1
+
+        if self.down_sampling:
+            # do it only for case where all dim are higher than self.min_shape_size
+            if all(np.array(arr.shape) > self.min_shape_size):
+                # find short axis, which should not be down sampeld
+                short_axis = np.array(arr.shape).argmin()
+                # check if long axes = not short axis longer as 24:
+                axes = [0, 1, 2]
+                axes.remove(short_axis)
+                if (arr.shape[axes[0]] >= 24) and (arr.shape[axes[1]] >= 24):
+                    # define pooling kernel which ignore short axis
+                    pooling_kernel = [2, 2, 2]
+                    pooling_kernel[short_axis] = 1
+                    pooling_kernel = tuple(pooling_kernel)
+
+                    # pooling
+
+                    def mean_round(x, axis=None):
+                        return int(np.round(np.mean(x, axis=axis)))
+
+                    arr = skimage.measure.block_reduce(arr, pooling_kernel, np.max)
+                    arr_ct = skimage.measure.block_reduce(arr_ct, pooling_kernel, np.mean)
+
+        if self.caching:
+            self.cache[ID] = {'mask': arr, 'ct': arr_ct}
+        return arr, arr_ct
+
+    def __data_generation(self, list_IDs_temp):
+        'Generates data containing batch_size samples'
+        # X : (n_samples, *dim, n_channels)
+        # Initialization
+        X_list = []
+        y_list = []
+        # print(list_IDs_temp)
+        for ID in list_IDs_temp:
+            # todo: load bbox from original CT and do the SAME augmentation on it
+            if self.data_source_mode == 'indirect':
+                file_name = self.df.loc[ID].instance_file
+                file_name_bbox_ct_name = file_name.split('.')[0] + '_raw.' + file_name.split('.')[1]
+            elif self.data_source_mode == 'direct':
+                file_name = self.df.rel_path_seg_file.loc[ID]
+                file_name_bbox_ct_name = self.df.rel_path_raw_file.loc[ID]
+            else:
+                raise Exception(f"data_source_mode does not support: {self.data_source_mode}")
+            # Store sample
+            if self.caching:
+                if ID in self.cache.keys():
+                    arr = self.cache[ID]['mask']
+                    arr_ct = self.cache[ID]['ct']
+                else:
+                    arr, arr_ct = self.__load(file_name, file_name_bbox_ct_name, ID)
+            else:
+                arr, arr_ct = self.__load(file_name, file_name_bbox_ct_name, ID)
+
+            arr_norm = arr
+            arr_ct_norm = arr_ct
+
+            # normalize to [0,1]
+            # arr_norm = (arr - arr.min()) / (arr - arr.min()).max()
+            # assert (arr_ct_norm - arr_ct_norm.min()).max() > 0, f"all values zero for ct with index {ID}."
+            # arr_ct_norm = (arr_ct_norm - arr_ct_norm.min()) / (arr_ct_norm - arr_ct_norm.min()).max()
+            # normilaize to houndsfield unit range bone
+            limit_bottom = -1000
+            arr_ct_norm[arr_ct_norm < limit_bottom] = limit_bottom
+            limit_up = 1000
+            arr_ct_norm[arr_ct_norm > limit_up] = limit_up
+            arr_ct_norm = (arr_ct_norm - limit_bottom) / (limit_up - limit_bottom)
+            # normalize to [-1,1]
+            arr_norm = arr_norm * 2 - 1
+            arr_ct_norm = arr_ct_norm * 2 - 1
+            # arr_norm = (arr_norm - arr_norm.mean())/arr.std()
+
+            X_list.append(np.concatenate((arr_norm[..., None], arr_ct_norm[..., None]), axis=3))
+
+            # Store class
+            y_list.append(self.df.label.loc[ID])
+            # print(y_list[-1])
+
+        # get the max image shape
+        max_shape = list(max(image.shape[x] for image in X_list) for x in range(3))
+        for index, scalar in enumerate(max_shape):
+            if scalar < self.min_shape_size:
+                max_shape[index] = self.min_shape_size
+        max_shape = tuple(max_shape)
+
+        self.dim = max_shape
+        print(self.dim)
+        # Initialization
+        # X = np.empty((self.batch_size, *self.dim, self.n_channels))
+        X = np.zeros((self.batch_size, *self.dim, self.n_channels)) - 1  # empty values are signed by value "-1"
+        y = np.empty((self.batch_size), dtype=int)
+
+        for image_index, image in enumerate(X_list):
+            # Store sample
+            offset_list = [self.dim[i] - image.shape[i] for i in range(len(self.dim))]
+            offset_random_list = [rd.randint(0, offset_list[i]) for i in range(len(self.dim))]
+            X[image_index,
+            offset_random_list[0]:offset_random_list[0] + image.shape[0],
+            offset_random_list[1]:offset_random_list[1] + image.shape[1],
+            offset_random_list[2]:offset_random_list[2] + image.shape[2],
+            :] = image
+            # Store class
+            y[image_index] = y_list[image_index]
+
+        return X, tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
+
+    def split_cases_in_classes(self):
+        df_classes_split_list = []
+        for cla in range(self.n_classes):
+            _ = self.df.loc[(self.df.label == cla)]
+            df_classes_split_list.append(_)
+            print(f'Number of classes {cla} cases: {len(_)}')
+        return df_classes_split_list
+
 
 if __name__ == '__main__':
     # load data csv file:
