@@ -62,7 +62,6 @@ def train(model, train_generator, val_generator, epochs=50):
     model_dir = r'./saved_model'
     os.makedirs(model_dir, exist_ok=True)
     model.save(os.path.join(model_dir, f'model_{datetime.datetime.now().strftime("%Y%m%d")}'))
-
     return history
 
 

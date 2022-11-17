@@ -635,6 +635,8 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
         for index, scalar in enumerate(max_shape):
             if scalar < self.min_shape_size:
                 max_shape[index] = self.min_shape_size
+            if max_shape[index] % 16 != 0:
+                max_shape[index] = ((max_shape[index] // 16) + 1) * 16
         max_shape = tuple(max_shape)
 
         self.dim = max_shape
