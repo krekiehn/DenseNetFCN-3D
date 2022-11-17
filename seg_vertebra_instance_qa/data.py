@@ -355,7 +355,7 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
 
     def __init__(self, df, batch_size=4, n_channels=2,
                  n_classes=4, shuffle=True, data_path=data_path, partition='train', aug_max_shift=0.1,
-                 min_shape_size=12, mode=None, down_sampling=False, caching=True, data_source_mode='indirect'):
+                 min_shape_size=16, mode=None, down_sampling=False, caching=True, data_source_mode='indirect'):
         'Initialization'
         self.batch_size = batch_size
         assert self.batch_size % 4 == 0, 'batch_size have to be a multiple of four.'
