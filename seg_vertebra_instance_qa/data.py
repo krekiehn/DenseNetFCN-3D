@@ -641,8 +641,7 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
 
         self.dim = max_shape
         print(self.dim)
-        with open('batch_shape_log.txt', 'w') as f:
-            f.write(str(self.dim))
+
         # Initialization
         # X = np.empty((self.batch_size, *self.dim, self.n_channels))
         X = np.zeros((self.batch_size, *self.dim, self.n_channels)) - 1  # empty values are signed by value "-1"
@@ -659,6 +658,9 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
             :] = image
             # Store class
             y[image_index] = y_list[image_index]
+
+        with open('batch_shape_log.txt', 'a') as f:
+            f.write(str(self.dim) + ', ' + str(X.sum()) + ', ' + str(X.sum()/X.size) + '\n')
 
         return X, tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
 
