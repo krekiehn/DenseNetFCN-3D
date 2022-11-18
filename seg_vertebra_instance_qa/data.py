@@ -438,7 +438,7 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
             assert False, f"Error: unkown data_source_mode {self.data_source_mode}!"
         # set all values in seg mask to 1 (mask) or 0 (background)
         label = self.df.instance_id.loc[ID]
-        if label:
+        if not pd.isna(label):
             arr[arr != label] = 0
             arr[arr == label] = 1
         else:
