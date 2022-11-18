@@ -735,6 +735,7 @@ class DataGenerator_4_classes_weights(tf.keras.utils.Sequence):
             self.number_samples += len(x)
         self.sample_weights = [self.number_samples/(len(x)*self.n_classes) for x in self.df_classes_split_list]
         print(f'Sample weights are {self.sample_weights}: {np.array(self.sample_weights).sum()}')
+        self.df_indices = self.df.index.values
         self.list_df_indices = [[] for i in range(self.n_classes)]
         for cla in range(self.n_classes):
             self.re_init_indices_df(cla=cla)
@@ -746,25 +747,24 @@ class DataGenerator_4_classes_weights(tf.keras.utils.Sequence):
 
     def __len__(self):
         'Denotes the number of batches per epoch'
-        lens = []
-        for cla in range(self.n_classes):
-            lens.append(int(np.floor(len(self.list_df_indices[cla]) / self.batch_size)))
-        return np.max(lens) - 1
+        lens = self.number_samples
+        return lens
 
     def __getitem__(self, index):
         'Generate one batch of data'
         # Generate indexes of the batch
         # indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
         indices_4_batch_list = []
-        for i in range(self.batch_size // self.n_classes):
-            for cla in range(self.n_classes):
-                if len(self.list_df_indices[cla]) == 0:
-                    self.re_init_indices_df(cla=cla)
-                indices_4_batch_list.append(self.list_df_indices[cla].pop())
-
+        # for i in range(self.batch_size // self.n_classes):
+        #     for cla in range(self.n_classes):
+        #         if len(self.list_df_indices[cla]) == 0:
+        #             self.re_init_indices_df(cla=cla)
+        #         indices_4_batch_list.append(self.list_df_indices[cla].pop())
+        for i in range(self.batch_size):
+            indices_4_batch_list.append(self.df_indices.pop())
         rd.shuffle(indices_4_batch_list)
         # Generate data
-        X, y = self.__data_generation(indices_4_batch_list)
+        X, y, sample_weight = self.__data_generation(indices_4_batch_list)
 
         if np.isnan(X).sum() != 0:
             for b in range(X.shape[0]):
@@ -774,7 +774,7 @@ class DataGenerator_4_classes_weights(tf.keras.utils.Sequence):
                     print('raw', indices_4_batch_list[b])
         assert np.isnan(X).sum() == 0, f"NaNs: {np.isnan(X).sum()}, X {indices_4_batch_list} includes NaN. {X.shape}"
         assert np.isnan(y).sum() == 0, f"y {indices_4_batch_list} includes NaN. {y}"
-        return X, y
+        return X, y, sample_weight
 
     def re_init_indices_df(self, cla):
         self.list_df_indices[cla] = list(self.df_classes_split_list[cla].index.values)
@@ -783,8 +783,7 @@ class DataGenerator_4_classes_weights(tf.keras.utils.Sequence):
 
     def on_epoch_end(self):
         'Updates indexes after each epoch'
-        for cla in range(self.n_classes):
-            self.re_init_indices_df(cla)
+        self.df_indices = self.df.index.values
 
     def __load(self, file_name, file_name_bbox_ct_name, ID):
         if self.data_source_mode == 'indirect':
@@ -841,6 +840,7 @@ class DataGenerator_4_classes_weights(tf.keras.utils.Sequence):
         # Initialization
         X_list = []
         y_list = []
+        sample_weight_list = []
         # print(list_IDs_temp)
         for ID in list_IDs_temp:
             # todo: load bbox from original CT and do the SAME augmentation on it
@@ -964,6 +964,8 @@ class DataGenerator_4_classes_weights(tf.keras.utils.Sequence):
 
             # Store class
             y_list.append(self.df.label.loc[ID])
+
+            sample_weight_list.append(self.sample_weights[self.df.label.loc[ID]])
             # print(y_list[-1])
 
         # get the max image shape
@@ -983,6 +985,7 @@ class DataGenerator_4_classes_weights(tf.keras.utils.Sequence):
         X = np.zeros((self.batch_size, *self.dim, self.n_channels),
                      dtype=np.float16) - 1  # empty values are signed by value "-1"
         y = np.empty((self.batch_size), dtype=int)
+        sample_weight = np.empty((self.batch_size), dtype=float)
 
         for image_index, image in enumerate(X_list):
             # Store sample
@@ -995,12 +998,13 @@ class DataGenerator_4_classes_weights(tf.keras.utils.Sequence):
             :] = image
             # Store class
             y[image_index] = y_list[image_index]
+            sample_weight[image_index] = sample_weight_list[image_index]
 
         with open('batch_shape_log.txt', 'a') as f:
             f.write(str(self.dim) + ', ' + str(X[:, :, :, :, 0].astype(np.float64).sum()) + ', ' + str(
                 X[:, :, :, :, 0].astype(np.float64).sum() / X[:, :, :, :, 0].astype(np.float64).size) + ', ' + str(
                 X[:, :, :, :, 0].min()) + ', ' + str(X[:, :, :, :, 0].max()) + '\n')
-        return X, tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
+        return X, tf.keras.utils.to_categorical(y, num_classes=self.n_classes), sample_weight
 
     def split_cases_in_classes(self):
         df_classes_split_list = []
