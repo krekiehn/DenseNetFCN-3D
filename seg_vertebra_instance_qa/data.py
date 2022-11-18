@@ -747,8 +747,7 @@ class DataGenerator_4_classes_weights(tf.keras.utils.Sequence):
 
     def __len__(self):
         'Denotes the number of batches per epoch'
-        lens = self.number_samples
-        return lens
+        return self.number_samples // self.batch_size
 
     def __getitem__(self, index):
         'Generate one batch of data'
