@@ -438,14 +438,16 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
             assert False, f"Error: unkown data_source_mode {self.data_source_mode}!"
         # set all values in seg mask to 1 (mask) or 0 (background)
         label = self.df.instance_id.loc[ID]
-        assert np.unique(arr).size == 2, f'Segmentation Mask have not two labels, but {np.unique(arr)}. {file_name}, {file_name_bbox_ct_name}, {ID}'
+        
         if not pd.isna(label):
-            if (np.unique(arr) == np.array([0,1])).all():
+            if label in np.unique(arr):
                 arr[arr != label] = 0
                 arr[arr == label] = 1
         else:
             assert (np.unique(arr) == np.array([0,1])).all(), f'Segmentation Mask have labels 0 and 1, but {np.unique(arr)}. {file_name}, {file_name_bbox_ct_name}, {ID}'
-
+            
+        assert np.unique(arr).size == 2, f'Segmentation Mask have not two labels, but {np.unique(arr)}. {file_name}, {file_name_bbox_ct_name}, {ID}'
+        
         if self.down_sampling:
             # do it only for case where all dim are higher than self.min_shape_size
             if all(np.array(arr.shape) > self.min_shape_size):
