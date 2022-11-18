@@ -429,17 +429,20 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
 
     def __load(self, file_name, file_name_bbox_ct_name, ID):
         if self.data_source_mode == 'indirect':
-            arr = np.load(os.path.join(self.data_path, file_name))
+            arr = np.load(os.path.join(self.data_path, file_name))#.astype(np.float16)
             arr_ct = np.load(os.path.join(self.data_path, 'raw', file_name_bbox_ct_name))
         elif self.data_source_mode == 'direct':
-            arr = np.load(os.path.join(self.data_path, file_name))
+            arr = np.load(os.path.join(self.data_path, file_name))#.astype(np.float16)
             arr_ct = np.load(os.path.join(self.data_path, file_name_bbox_ct_name))
         else:
             assert False, f"Error: unkown data_source_mode {self.data_source_mode}!"
         # set all values in seg mask to 1 (mask) or 0 (background)
         label = self.df.instance_id.loc[ID]
-        arr[arr != label] = 0
-        arr[arr == label] = 1
+        if label:
+            arr[arr != label] = 0
+            arr[arr == label] = 1
+        else:
+            assert np.unique(arr).size == 2, f'Segmentation Mask have not 2 different labels, but {np.unique(arr)}. {file_name}, {file_name_bbox_ct_name}, {ID}'
 
         if self.down_sampling:
             # do it only for case where all dim are higher than self.min_shape_size
@@ -565,37 +568,37 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
                         arr_ct_norm = np.flip(arr_ct_norm, axis=axis)
 
                 # shift by 0 to xx % of pixel-length a long axis for 0 to 3 axis # make sure, there are positive values left in the array
-                # how many axis?
-                num_axis = rd.randint(0, 3)
-                axes = [0, 1, 2]
-                rd.shuffle(axes)
-                # shift by 0 to max 10? % of side length? make max shift a func argument
-                for i in range(num_axis):
-                    axis = axes.pop()
-                    max_length = arr_norm.shape[axis] * self.aug_max_shift
-                    factor = 1 - rd.random() * 2
-
-                    arr_norm_tmp = np.zeros(arr_norm.shape) - 1
-                    arr_ct_norm_tmp = np.zeros(arr_ct_norm.shape) - 1
-                    shift_index = int(np.round(max_length * abs(factor)))
-                    index_list = [slice(None), slice(None), slice(None)]
-                    index_list_tmp = [slice(None), slice(None), slice(None)]
-                    index_list_tmp[axis] = slice(shift_index, None)
-                    index_list[axis] = slice(None, arr_norm.shape[axis] - shift_index)
-                    index_list = tuple(index_list)
-                    index_list_tmp = tuple(index_list_tmp)
-                    if factor > 0:  # shift to the "right" side along axis
-                        arr_norm_tmp[index_list_tmp] = arr_norm[index_list]
-                        arr_ct_norm_tmp[index_list_tmp] = arr_ct_norm[index_list]
-                    elif factor < 0:
-                        arr_norm_tmp[index_list] = arr_norm[index_list_tmp]
-                        arr_ct_norm_tmp[index_list] = arr_ct_norm[index_list_tmp]
-                    else:
-                        continue
-                    # check if at least one pixel positive value
-                    if np.any(arr_norm_tmp == 1):
-                        arr_norm = arr_norm_tmp
-                        arr_ct_norm = arr_ct_norm_tmp
+                # # how many axis?
+                # num_axis = rd.randint(0, 3)
+                # axes = [0, 1, 2]
+                # rd.shuffle(axes)
+                # # shift by 0 to max 10? % of side length? make max shift a func argument
+                # for i in range(num_axis):
+                #     axis = axes.pop()
+                #     max_length = arr_norm.shape[axis] * self.aug_max_shift
+                #     factor = 1 - rd.random() * 2
+                #
+                #     arr_norm_tmp = np.zeros(arr_norm.shape) - 1
+                #     arr_ct_norm_tmp = np.zeros(arr_ct_norm.shape) - 1
+                #     shift_index = int(np.round(max_length * abs(factor)))
+                #     index_list = [slice(None), slice(None), slice(None)]
+                #     index_list_tmp = [slice(None), slice(None), slice(None)]
+                #     index_list_tmp[axis] = slice(shift_index, None)
+                #     index_list[axis] = slice(None, arr_norm.shape[axis] - shift_index)
+                #     index_list = tuple(index_list)
+                #     index_list_tmp = tuple(index_list_tmp)
+                #     if factor > 0:  # shift to the "right" side along axis
+                #         arr_norm_tmp[index_list_tmp] = arr_norm[index_list]
+                #         arr_ct_norm_tmp[index_list_tmp] = arr_ct_norm[index_list]
+                #     elif factor < 0:
+                #         arr_norm_tmp[index_list] = arr_norm[index_list_tmp]
+                #         arr_ct_norm_tmp[index_list] = arr_ct_norm[index_list_tmp]
+                #     else:
+                #         continue
+                #     # check if at least one pixel positive value
+                #     if np.any(arr_norm_tmp == 1):
+                #         arr_norm = arr_norm_tmp
+                #         arr_ct_norm = arr_ct_norm_tmp
                 # zoom in or out by xxx % of what?
 
                 #Rotation by free degree:
