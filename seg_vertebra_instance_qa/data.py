@@ -439,8 +439,9 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
         # set all values in seg mask to 1 (mask) or 0 (background)
         label = self.df.instance_id.loc[ID]
         if not pd.isna(label):
-            arr[arr != label] = 0
-            arr[arr == label] = 1
+            if np.unique(arr).size != 2:
+                arr[arr != label] = 0
+                arr[arr == label] = 1
         else:
             assert np.unique(arr).size == 2, f'Segmentation Mask have not 2 different labels, but {np.unique(arr)}. {file_name}, {file_name_bbox_ct_name}, {ID}'
 
