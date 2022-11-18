@@ -15,21 +15,21 @@ def FCN_model(len_classes=5, dropout_rate=0.2, shape=(None, None, None, 1)):
 
     x = tf.keras.layers.MaxPooling3D()(x)
 
-    x = tf.keras.layers.Conv3D(filters=16*8, kernel_size=5, strides=1, padding='same')(x)
+    x = tf.keras.layers.Conv3D(filters=16*2, kernel_size=5, strides=1, padding='same')(x)
     x = tf.keras.layers.Dropout(dropout_rate)(x)
     x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.Activation('relu')(x)
 
     x = tf.keras.layers.MaxPooling3D()(x)
 
-    x = tf.keras.layers.Conv3D(filters=16*8*2, kernel_size=3, strides=1)(x)
+    x = tf.keras.layers.Conv3D(filters=16*2*2, kernel_size=3, strides=1)(x)
     x = tf.keras.layers.Dropout(dropout_rate)(x)
     x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.Activation('relu')(x)
 
     x = tf.keras.layers.MaxPooling3D()(x)
 
-    x = tf.keras.layers.Conv3D(filters=16*8*4, kernel_size=3, strides=1)(x)
+    x = tf.keras.layers.Conv3D(filters=16*2*2*2, kernel_size=3, strides=1)(x)
     x = tf.keras.layers.Dropout(dropout_rate)(x)
     x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.Activation('relu')(x)
@@ -50,7 +50,7 @@ def FCN_model(len_classes=5, dropout_rate=0.2, shape=(None, None, None, 1)):
     # Fully connected layer 1
     x = tf.keras.layers.Dropout(dropout_rate)(x)
     x = tf.keras.layers.BatchNormalization()(x)
-    x = tf.keras.layers.Dense(units=64)(x)
+    x = tf.keras.layers.Dense(units=32)(x)
     x = tf.keras.layers.Activation('relu')(x)
 
     # Fully connected layer 1
