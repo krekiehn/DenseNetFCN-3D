@@ -34,4 +34,4 @@ This implementation is based on the following reference code:
  - https://www.nature.com/articles/s41598-020-70479-z/tables/2
 
  ## DOCKER COMMANDS
-docker run -it --gpus=3 --ipc=host -v $(pwd):/code -v /home/sukin699/Verse/Verse_full:/data tensorflow/tensorflow  
+docker run -u $(id -u):$(id -g) -it --gpus=3 --ipc=host -v $(pwd):/code -v /home/sukin699/Verse/Verse_full:/data tensorflow/tensorflow  

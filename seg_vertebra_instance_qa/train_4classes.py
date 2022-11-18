@@ -83,7 +83,7 @@ if __name__ == '__main__':
                 model_fcn = FCN_model(len_classes=parameters['n_classes'], dropout_rate=0.2, shape=(None, None, None, parameters['n_channels']))
                 model_fcn.compile(optimizer=tf.keras.optimizers.Adam(lr=0.0001),
                               loss='categorical_crossentropy',
-                              metrics=['accuracy'],
+                              metrics=['categorical_accuracy'],
                             run_eagerly=False)
         else:
             print(f"MULTI GPU OFF: No. GPUs {len(tf.config.get_visible_devices('GPU'))}")
