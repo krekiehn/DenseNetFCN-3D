@@ -530,6 +530,8 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
             #             arr_ct = skimage.measure.block_reduce(arr_ct, pooling_kernel, np.mean)
 
             arr_norm = arr
+            with open('batch_shape_log.txt', 'a') as f:
+                f.write(str(arr.shape) + ', ' + str(arr.sum()) + ', ' + str(arr.sum() / arr.size) + '\n')
             arr_ct_norm = arr_ct
 
             # ToDo: add some kind of augmentation here. e.g. Rotation, Zoom, noise for segmentation mask???
@@ -597,16 +599,16 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
                 # zoom in or out by xxx % of what?
 
                 #Rotation by free degree:
-                if np.array(arr_ct.shape).min() >= self.min_shape_size:
-                    # define axes
-                    axes = [0,1,2]
-                    axis = rd.choice(axes)
-                    axes.remove(axis)
-                    axes_rot = tuple(axes)
-                    # define some rotation angles
-                    angle = rd.randint(-45, 45)
-                    arr_norm = self.augmentation_rotate_volume(axes=axes_rot, angle=angle, volume=arr_norm, mode='int')
-                    arr_ct_norm = self.augmentation_rotate_volume(axes=axes_rot, angle=angle, volume=arr_ct_norm, mode='float')
+                # if np.array(arr_ct.shape).min() >= self.min_shape_size:
+                #     # define axes
+                #     axes = [0,1,2]
+                #     axis = rd.choice(axes)
+                #     axes.remove(axis)
+                #     axes_rot = tuple(axes)
+                #     # define some rotation angles
+                #     angle = rd.randint(-45, 45)
+                #     arr_norm = self.augmentation_rotate_volume(axes=axes_rot, angle=angle, volume=arr_norm, mode='int')
+                #     arr_ct_norm = self.augmentation_rotate_volume(axes=axes_rot, angle=angle, volume=arr_ct_norm, mode='float')
 
             
             # normalize to [0,1]
@@ -660,7 +662,8 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
             y[image_index] = y_list[image_index]
 
         with open('batch_shape_log.txt', 'a') as f:
-            f.write(str(self.dim) + ', ' + str(X[:,:,:,:,0].sum()) + ', ' + str(X[:,:,:,:,0].sum()/X[:,:,:,:,0].size) + '\n')
+            f.write(str(self.dim) + ', ' + str(X[:,:,:,:,0].sum()) + ', ' + str(X[:,:,:,:,0].sum()/X[:,:,:,:,0].size) \
+                    + ', ' + str(X[:,:,:,:,0].min()) + ', ' + str(X[:,:,:,:,0].max() + '\n')
 
         return X, tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
 
