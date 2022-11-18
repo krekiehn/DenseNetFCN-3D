@@ -735,7 +735,7 @@ class DataGenerator_4_classes_weights(tf.keras.utils.Sequence):
             self.number_samples += len(x)
         self.sample_weights = [self.number_samples/(len(x)*self.n_classes) for x in self.df_classes_split_list]
         print(f'Sample weights are {self.sample_weights}: {np.array(self.sample_weights).sum()}')
-        self.df_indices = self.df.index.values
+        self.df_indices = []
         self.list_df_indices = [[] for i in range(self.n_classes)]
         for cla in range(self.n_classes):
             self.re_init_indices_df(cla=cla)
@@ -783,7 +783,7 @@ class DataGenerator_4_classes_weights(tf.keras.utils.Sequence):
 
     def on_epoch_end(self):
         'Updates indexes after each epoch'
-        self.df_indices = self.df.index.values
+        self.df_indices = list(self.df.index.values)
 
     def __load(self, file_name, file_name_bbox_ct_name, ID):
         if self.data_source_mode == 'indirect':
