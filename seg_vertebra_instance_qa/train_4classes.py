@@ -92,7 +92,7 @@ if __name__ == '__main__':
             # model_fcn.compile(optimizer=tf.keras.optimizers.Adam(lr=0.0001),
             #               loss='categorical_crossentropy',
             #               metrics=['accuracy'])
-            model_fcn.compile(optimizer=tf.keras.optimizers.SGD(),
+            model_fcn.compile(optimizer=tf.keras.optimizers.Adam(lr=0.0001),
                               loss='categorical_crossentropy',
                               metrics=['categorical_accuracy'])
         # model_fcn.summary()
