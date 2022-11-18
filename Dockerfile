@@ -7,7 +7,8 @@ MAINTAINER "nicolai krekiehn <nicolai.krekiehn@rad.uni-kiel.de>"
 
 WORKDIR /code
 
-
+RUN rm /etc/apt/sources.list.d/cuda.list
+RUN rm /etc/apt/sources.list.d/nvidia-ml.list
 RUN apt-get update ##[edited]
 #RUN apt-get install 'ffmpeg'\
 #    'libsm6'\
