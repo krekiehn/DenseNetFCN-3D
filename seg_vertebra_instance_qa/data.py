@@ -439,11 +439,11 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
         # set all values in seg mask to 1 (mask) or 0 (background)
         label = self.df.instance_id.loc[ID]
         if not pd.isna(label):
-            if np.unique(arr).size != 2:
+            if (np.unique(arr) == np.array([0,1])).all():
                 arr[arr != label] = 0
                 arr[arr == label] = 1
         else:
-            assert np.unique(arr).size == 2, f'Segmentation Mask have not 2 different labels, but {np.unique(arr)}. {file_name}, {file_name_bbox_ct_name}, {ID}'
+            assert (np.unique(arr) == np.array([0,1])).all(), f'Segmentation Mask have labels 0 and 1, but {np.unique(arr)}. {file_name}, {file_name_bbox_ct_name}, {ID}'
 
         if self.down_sampling:
             # do it only for case where all dim are higher than self.min_shape_size
@@ -650,7 +650,7 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
 
         # Initialization
         # X = np.empty((self.batch_size, *self.dim, self.n_channels))
-        X = np.zeros((self.batch_size, *self.dim, self.n_channels)) - 1  # empty values are signed by value "-1"
+        X = np.zeros((self.batch_size, *self.dim, self.n_channels),dtype=np.float16) - 1  # empty values are signed by value "-1"
         y = np.empty((self.batch_size), dtype=int)
 
         for image_index, image in enumerate(X_list):
