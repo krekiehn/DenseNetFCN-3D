@@ -660,7 +660,7 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
             y[image_index] = y_list[image_index]
 
         with open('batch_shape_log.txt', 'a') as f:
-            f.write(str(self.dim) + ', ' + str(X.sum()) + ', ' + str(X.sum()/X.size) + '\n')
+            f.write(str(self.dim) + ', ' + str(X[:,:,:,:,0].sum()) + ', ' + str(X[:,:,:,:,0].sum()/X[:,:,:,:,0].size) + '\n')
 
         return X, tf.keras.utils.to_categorical(y, num_classes=self.n_classes)
 
