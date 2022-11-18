@@ -531,7 +531,7 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
 
             arr_norm = arr
             with open('batch_shape_log.txt', 'a') as f:
-                f.write(str(arr.shape) + ', ' + str(arr.sum()) + ', ' + str(arr.sum() / arr.size) + '\n')
+                f.write(str(arr.shape) + ', ' + str(arr.sum()) + ', ' + str(arr.sum() / arr.size) + f'{file_name}, {file_name_bbox_ct_name}, {ID}' + '\n')
             arr_ct_norm = arr_ct
 
             # ToDo: add some kind of augmentation here. e.g. Rotation, Zoom, noise for segmentation mask???
