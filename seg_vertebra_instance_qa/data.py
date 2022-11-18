@@ -784,6 +784,7 @@ class DataGenerator_4_classes_weights(tf.keras.utils.Sequence):
     def on_epoch_end(self):
         'Updates indexes after each epoch'
         self.df_indices = list(self.df.index.values)
+        rd.shuffle(self.df_indices)
 
     def __load(self, file_name, file_name_bbox_ct_name, ID):
         if self.data_source_mode == 'indirect':
