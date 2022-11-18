@@ -438,6 +438,7 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
             assert False, f"Error: unkown data_source_mode {self.data_source_mode}!"
         # set all values in seg mask to 1 (mask) or 0 (background)
         label = self.df.instance_id.loc[ID]
+        assert np.unique(arr).size == 2, f'Segmentation Mask have not two labels, but {np.unique(arr)}. {file_name}, {file_name_bbox_ct_name}, {ID}'
         if not pd.isna(label):
             if (np.unique(arr) == np.array([0,1])).all():
                 arr[arr != label] = 0
