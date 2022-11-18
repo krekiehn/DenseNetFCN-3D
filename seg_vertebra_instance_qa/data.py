@@ -533,7 +533,7 @@ class DataGenerator_4_classes(tf.keras.utils.Sequence):
             #             arr = skimage.measure.block_reduce(arr, pooling_kernel, np.mean)
             #             arr_ct = skimage.measure.block_reduce(arr_ct, pooling_kernel, np.mean)
 
-            arr_norm = arr
+            arr_norm = arr.astype(np.float16)
             with open('batch_shape_log.txt', 'a') as f:
                 f.write(str(arr.shape) + ', ' + str(arr.sum()) + ', ' + str(arr.sum() / arr.size) + f'{file_name}, {file_name_bbox_ct_name}, {ID}' + '\n')
             arr_ct_norm = arr_ct
