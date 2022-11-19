@@ -1038,6 +1038,354 @@ class DataGenerator_4_classes_weights(tf.keras.utils.Sequence):
         return volume
 
 
+class DataGenerator_4_classes_weights_uni_spacing(tf.keras.utils.Sequence):
+    'Generates data for Keras'
+    import scipy.ndimage
+    
+    def __init__(self, df, batch_size=4, n_channels=2,
+                 n_classes=4, shuffle=True, data_path=data_path, partition='train', aug_max_shift=0.1,
+                 min_shape_size=16, mode=None, down_sampling=False, caching=True, data_source_mode='indirect'):
+        'Initialization'
+        self.batch_size = batch_size
+        assert self.batch_size % 4 == 0, 'batch_size have to be a multiple of four.'
+        self.n_channels = n_channels
+        self.n_classes = n_classes
+        self.shuffle = shuffle
+        self.min_shape_size = min_shape_size
+        self.mode = mode
+        self.data_path = data_path
+        self.data_source_mode = data_source_mode
+        if self.data_source_mode == 'direct':
+            self.data_path = os.path.dirname(self.data_path)
+        self.down_sampling = down_sampling
+        self.caching = caching
+        if self.caching:
+            self.cache = {}
+
+        self.partition = partition
+        self.df = df.loc[df.partition == self.partition]
+        self.df_classes_split_list = self.split_cases_in_classes()
+        self.number_samples = 0
+        for x in self.df_classes_split_list:
+            self.number_samples += len(x)
+        self.sample_weights = [self.number_samples/(len(x)*self.n_classes) for x in self.df_classes_split_list]
+        print(f'Sample weights are {self.sample_weights}: {np.array(self.sample_weights).sum()}')
+        self.df_indices = []
+        self.list_df_indices = [[] for i in range(self.n_classes)]
+        for cla in range(self.n_classes):
+            self.re_init_indices_df(cla=cla)
+
+        self.aug_max_shift = aug_max_shift
+
+        self.on_epoch_end()
+        self.len = self.__len__()
+
+    def __len__(self):
+        'Denotes the number of batches per epoch'
+        return self.number_samples // self.batch_size
+
+    def __getitem__(self, index):
+        'Generate one batch of data'
+        # Generate indexes of the batch
+        # indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
+        indices_4_batch_list = []
+        # for i in range(self.batch_size // self.n_classes):
+        #     for cla in range(self.n_classes):
+        #         if len(self.list_df_indices[cla]) == 0:
+        #             self.re_init_indices_df(cla=cla)
+        #         indices_4_batch_list.append(self.list_df_indices[cla].pop())
+        for i in range(self.batch_size):
+            indices_4_batch_list.append(self.df_indices.pop())
+        rd.shuffle(indices_4_batch_list)
+        # Generate data
+        X, y, sample_weight = self.__data_generation(indices_4_batch_list)
+
+        if np.isnan(X).sum() != 0:
+            for b in range(X.shape[0]):
+                if np.isnan(X[b, :, :, :, 0]).sum() != 0:
+                    print('seg mask', indices_4_batch_list[b])
+                if np.isnan(X[b, :, :, :, 1]).sum() != 0:
+                    print('raw', indices_4_batch_list[b])
+        assert np.isnan(X).sum() == 0, f"NaNs: {np.isnan(X).sum()}, X {indices_4_batch_list} includes NaN. {X.shape}"
+        assert np.isnan(y).sum() == 0, f"y {indices_4_batch_list} includes NaN. {y}"
+        return X, y, sample_weight
+
+    def re_init_indices_df(self, cla):
+        self.list_df_indices[cla] = list(self.df_classes_split_list[cla].index.values)
+        if self.shuffle:
+            rd.shuffle(self.list_df_indices[cla])
+
+    def uniform_spacing(self, volume, index, desired_spacing=(1, 1, 1)):
+        #file = self.df.rel_path_seg_file.loc[index]
+        #volume = np.load(os.path.join(self.data_path, file))
+        spacing = eval(self.df.spacings.loc[index])[::-1]
+        #print(spacing)
+        if np.not_equal(tuple(spacing), desired_spacing).any():
+            scipy_dtype = 'int16'
+            # if dtype == 'float16' else dtype  # sadly scipy.ndimage.zoom does not work with float16
+            volume = volume.astype(scipy_dtype, copy=False)
+            volume = scipy.ndimage.zoom(volume, order=1, zoom=np.divide(spacing, desired_spacing), prefilter=False, output=scipy_dtype)
+        return volume
+
+    def on_epoch_end(self):
+        'Updates indexes after each epoch'
+        self.df_indices = list(self.df.index.values)
+        rd.shuffle(self.df_indices)
+
+    def __load(self, file_name, file_name_bbox_ct_name, ID):
+        if self.data_source_mode == 'indirect':
+            arr = np.load(os.path.join(self.data_path, file_name))  # .astype(np.float16)
+            arr_ct = np.load(os.path.join(self.data_path, 'raw', file_name_bbox_ct_name))
+        elif self.data_source_mode == 'direct':
+            arr = np.load(os.path.join(self.data_path, file_name))  # .astype(np.float16)
+            arr_ct = np.load(os.path.join(self.data_path, file_name_bbox_ct_name))
+        else:
+            assert False, f"Error: unkown data_source_mode {self.data_source_mode}!"
+        # set all values in seg mask to 1 (mask) or 0 (background)
+        label = self.df.instance_id.loc[ID]
+
+        if not pd.isna(label):
+            if label in np.unique(arr):
+                arr[arr != label] = 0
+                arr[arr == label] = 1
+        else:
+            assert (np.unique(arr) == np.array([0,1])).all(), f'Segmentation Mask have labels 0 and 1, but {np.unique(arr)}. {file_name}, {file_name_bbox_ct_name}, {ID}'
+
+        assert np.unique(arr).size == 2, f'Segmentation Mask have not two labels, but {np.unique(arr)}. {file_name}, {file_name_bbox_ct_name}, {ID}'
+
+        arr = uniform_spacing(self, volume=arr, index=ID, desired_spacing=(1, 1, 1))
+        arr_ct = uniform_spacing(self, volume=arr_ct, index=ID, desired_spacing=(1, 1, 1))
+        
+        if self.down_sampling:
+            # do it only for case where all dim are higher than self.min_shape_size
+            if all(np.array(arr.shape) > self.min_shape_size):
+                # find short axis, which should not be down sampeld
+                short_axis = np.array(arr.shape).argmin()
+                # check if long axes = not short axis longer as 24:
+                axes = [0, 1, 2]
+                axes.remove(short_axis)
+                if (arr.shape[axes[0]] >= 24) and (arr.shape[axes[1]] >= 24):
+                    # define pooling kernel which ignore short axis
+                    pooling_kernel = [2, 2, 2]
+                    pooling_kernel[short_axis] = 1
+                    pooling_kernel = tuple(pooling_kernel)
+
+                    # pooling
+
+                    def mean_round(x, axis=None):
+                        return int(np.round(np.mean(x, axis=axis)))
+
+                    arr = skimage.measure.block_reduce(arr, pooling_kernel, np.max)
+                    arr_ct = skimage.measure.block_reduce(arr_ct, pooling_kernel, np.mean)
+
+        if self.caching:
+            self.cache[ID] = {'mask': arr, 'ct': arr_ct}
+        return arr, arr_ct
+
+    def __data_generation(self, list_IDs_temp):
+        'Generates data containing batch_size samples'
+        # X : (n_samples, *dim, n_channels)
+        # Initialization
+        X_list = []
+        y_list = []
+        sample_weight_list = []
+        # print(list_IDs_temp)
+        for ID in list_IDs_temp:
+            # todo: load bbox from original CT and do the SAME augmentation on it
+            if self.data_source_mode == 'indirect':
+                file_name = self.df.loc[ID].instance_file
+                file_name_bbox_ct_name = file_name.split('.')[0] + '_raw.' + file_name.split('.')[1]
+            elif self.data_source_mode == 'direct':
+                file_name = self.df.rel_path_seg_file.loc[ID]
+                file_name_bbox_ct_name = self.df.rel_path_raw_file.loc[ID]
+            else:
+                raise Exception(f"data_source_mode does not support: {self.data_source_mode}")
+            # Store sample
+            if self.caching:
+                if ID in self.cache.keys():
+                    arr = self.cache[ID]['mask']
+                    arr_ct = self.cache[ID]['ct']
+                else:
+                    arr, arr_ct = self.__load(file_name, file_name_bbox_ct_name, ID)
+
+            else:
+                arr, arr_ct = self.__load(file_name, file_name_bbox_ct_name, ID)
+
+            arr_norm = arr.astype(np.float16)
+            with open('batch_shape_log.txt', 'a') as f:
+                f.write(str(arr.shape) + ', ' + str(arr.sum()) + ', ' + str(
+                    arr.sum() / arr.size) + f'{file_name}, {file_name_bbox_ct_name}, {ID}' + '\n')
+            arr_ct_norm = arr_ct
+
+            # ToDo: add some kind of augmentation here. e.g. Rotation, Zoom, noise for segmentation mask???
+            # add noise: values between arr_norm.min and arr_norm.max() - do this by model architecture
+            # if self.partition == 'train':
+            if self.partition == 'false':
+                # ToDo: add elastic deformity to seg mask, source: https://dltk.github.io/DLTK/api/dltk.io.html#dltk.io.augmentation.elastic_transform
+                # rot90 0 to 3 times for 0 to 3 axis
+                # how many axis?
+                num_axis = rd.randint(0, 3)
+                axes = [0, 1, 2]
+                rd.shuffle(axes)
+                for i in range(num_axis):
+                    axis = axes.pop()
+                    axes_4_rot = [0, 1, 2]
+                    axes_4_rot.remove(axis)  # remaining axes build up the prependicular plane to the rotation axis
+                    rd.shuffle(axes_4_rot)  # direction of rotation. clockwise or counter clockwise is randomly used
+                    times = rd.randint(0, 3)  # rot 0 to 3 times. 4 would like 0
+                    arr_norm = np.rot90(arr_norm, times, axes=axes_4_rot)
+                    arr_ct_norm = np.rot90(arr_ct_norm, times, axes=axes_4_rot)
+                # flip for 0 to 1 time for 0 to 3 axis
+                # how many axis?
+                num_axis = rd.randint(0, 3)
+                axes = [0, 1, 2]
+                rd.shuffle(axes)
+                for i in range(num_axis):
+                    axis = axes.pop()
+                    times = rd.randint(0, 1)  # flip 0 to 1 times. flip or not flip
+                    if times:
+                        arr_norm = np.flip(arr_norm, axis=axis)
+                        arr_ct_norm = np.flip(arr_ct_norm, axis=axis)
+
+                # shift by 0 to xx % of pixel-length a long axis for 0 to 3 axis # make sure, there are positive values left in the array
+                # # how many axis?
+                num_axis = rd.randint(0, 3)
+                axes = [0, 1, 2]
+                rd.shuffle(axes)
+                # # shift by 0 to max 10? % of side length? make max shift a func argument
+                for i in range(num_axis):
+                    axis = axes.pop()
+                    max_length = arr_norm.shape[axis] * self.aug_max_shift
+                    factor = 1 - rd.random() * 2
+
+                    arr_norm_tmp = np.zeros(arr_norm.shape) - 1
+                    arr_ct_norm_tmp = np.zeros(arr_ct_norm.shape) - 1
+                    shift_index = int(np.round(max_length * abs(factor)))
+                    index_list = [slice(None), slice(None), slice(None)]
+                    index_list_tmp = [slice(None), slice(None), slice(None)]
+                    index_list_tmp[axis] = slice(shift_index, None)
+                    index_list[axis] = slice(None, arr_norm.shape[axis] - shift_index)
+                    index_list = tuple(index_list)
+                    index_list_tmp = tuple(index_list_tmp)
+                    if factor > 0:  # shift to the "right" side along axis
+                        arr_norm_tmp[index_list_tmp] = arr_norm[index_list]
+                        arr_ct_norm_tmp[index_list_tmp] = arr_ct_norm[index_list]
+                    elif factor < 0:
+                        arr_norm_tmp[index_list] = arr_norm[index_list_tmp]
+                        arr_ct_norm_tmp[index_list] = arr_ct_norm[index_list_tmp]
+                    else:
+                        continue
+                    # check if at least one pixel positive value
+                    if np.any(arr_norm_tmp == 1):
+                        arr_norm = arr_norm_tmp
+                        arr_ct_norm = arr_ct_norm_tmp
+                # zoom in or out by xxx % of what?
+
+                # Rotation by free degree:
+                if np.array(arr_ct.shape).min() >= self.min_shape_size:
+                    # define axes
+                    axes = [0,1,2]
+                    axis = rd.choice(axes)
+                    axes.remove(axis)
+                    axes_rot = tuple(axes)
+                    # define some rotation angles
+                    angle = rd.randint(-45, 45)
+                    arr_norm = self.augmentation_rotate_volume(axes=axes_rot, angle=angle, volume=arr_norm, mode='int')
+                    arr_ct_norm = self.augmentation_rotate_volume(axes=axes_rot, angle=angle, volume=arr_ct_norm, mode='float')
+
+            # normalize to [0,1]
+            # arr_norm = (arr - arr.min()) / (arr - arr.min()).max()
+            # assert (arr_ct_norm - arr_ct_norm.min()).max() > 0, f"all values zero for ct with index {ID}."
+            # arr_ct_norm = (arr_ct_norm - arr_ct_norm.min()) / (arr_ct_norm - arr_ct_norm.min()).max()
+            # normilaize to houndsfield unit range bone
+            limit_bottom = -1000
+            arr_ct_norm[arr_ct_norm < limit_bottom] = limit_bottom
+            limit_up = 1000
+            arr_ct_norm[arr_ct_norm > limit_up] = limit_up
+            arr_ct_norm = (arr_ct_norm - limit_bottom) / (limit_up - limit_bottom)
+            # normalize to [-1,1]
+            arr_norm = arr_norm * 2 - 1
+            arr_ct_norm = arr_ct_norm * 2 - 1
+            # arr_norm = (arr_norm - arr_norm.mean())/arr.std()
+
+            X_list.append(np.concatenate((arr_norm[..., None], arr_ct_norm[..., None]), axis=3))
+
+            # Store class
+            y_list.append(self.df.label.loc[ID])
+
+            sample_weight_list.append(self.sample_weights[self.df.label.loc[ID]])
+            # print(y_list[-1])
+
+        # get the max image shape
+        max_shape = list(max(image.shape[x] for image in X_list) for x in range(3))
+        for index, scalar in enumerate(max_shape):
+            if scalar < self.min_shape_size:
+                max_shape[index] = self.min_shape_size
+            if max_shape[index] % 16 != 0:
+                max_shape[index] = ((max_shape[index] // 16) + 1) * 16
+        max_shape = tuple(max_shape)
+
+        self.dim = max_shape
+        print(self.dim)
+
+        # Initialization
+        # X = np.empty((self.batch_size, *self.dim, self.n_channels))
+        X = np.zeros((self.batch_size, *self.dim, self.n_channels),
+                     dtype=np.float16) - 1  # empty values are signed by value "-1"
+        y = np.empty((self.batch_size), dtype=int)
+        sample_weight = np.empty((self.batch_size), dtype=float)
+
+        for image_index, image in enumerate(X_list):
+            # Store sample
+            offset_list = [self.dim[i] - image.shape[i] for i in range(len(self.dim))]
+            offset_random_list = [rd.randint(0, offset_list[i]) for i in range(len(self.dim))]
+            X[image_index,
+            offset_random_list[0]:offset_random_list[0] + image.shape[0],
+            offset_random_list[1]:offset_random_list[1] + image.shape[1],
+            offset_random_list[2]:offset_random_list[2] + image.shape[2],
+            :] = image
+            # Store class
+            y[image_index] = y_list[image_index]
+            sample_weight[image_index] = sample_weight_list[image_index]
+
+        with open('batch_shape_log.txt', 'a') as f:
+            f.write(str(self.dim) + ', ' + str(X[:, :, :, :, 0].astype(np.float64).sum()) + ', ' + str(
+                X[:, :, :, :, 0].astype(np.float64).sum() / X[:, :, :, :, 0].astype(np.float64).size) + ', ' + str(
+                X[:, :, :, :, 0].min()) + ', ' + str(X[:, :, :, :, 0].max()) + '\n')
+        return X, tf.keras.utils.to_categorical(y, num_classes=self.n_classes), sample_weight
+
+    def split_cases_in_classes(self):
+        df_classes_split_list = []
+        for cla in range(self.n_classes):
+            _ = self.df.loc[(self.df.label == cla)]
+            df_classes_split_list.append(_)
+            print(f'Number of classes {cla} cases: {len(_)}')
+        return df_classes_split_list
+
+    def augmentation_rotate_volume(self, axes, angle, volume, mode='float'):
+        # define axes
+        # axes = [0,1,2]
+        # axis = random.choice(axes)
+        # axes.remove(axis)
+        axes_rot = tuple(axes)
+        # define some rotation angles
+        # angle = random.randint(-20, 20)
+        if angle == 0:
+            return volume
+        # rotate volume
+        if mode == 'float':
+            volume = ndimage.rotate(volume, angle, reshape=False, axes=axes_rot)
+            # volume[volume < 0] = 0
+            # volume[volume > 1] = 1
+        elif mode == 'int':
+            volume_ont_hot = tf.one_hot(volume, self.n_classes)
+            # do rot
+            volume_ont_hot = ndimage.rotate(volume_ont_hot, angle, reshape=False, axes=axes_rot)
+            volume_ont_hot_softmax = tf.nn.softmax(volume_ont_hot)
+            volume = np.argmax(volume_ont_hot_softmax, axis=-1)
+        return volume
+
+
 class DataGenerator_4_classes_performance(tf.keras.utils.Sequence):
     'Generates data for Keras'
 

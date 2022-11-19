@@ -1,7 +1,7 @@
 # init a FCN Model for training and later inference?
 #from DenseNet3D import DenseNet3D_FCN
 from SimpelNet import FCN_model
-from data import DataGenerator_4_classes, DataGenerator_4_classes_weights
+from data import DataGenerator_4_classes, DataGenerator_4_classes_weights, DataGenerator_4_classes_weights_uni_spacing
 import tensorflow as tf
 import pandas as pd
 import os
@@ -116,11 +116,11 @@ if __name__ == '__main__':
     except :
         pass
     
-    train_generator = DataGenerator_4_classes_weights(df_data, partition='train', batch_size=batch_size, n_channels=2, n_classes=4,
+    train_generator = DataGenerator_4_classes_weights_uni_spacing(df_data, partition='train', batch_size=batch_size, n_channels=2, n_classes=4,
                                               down_sampling=True, data_source_mode='direct')
-    val_generator = DataGenerator_4_classes_weights(df_data, partition='vali', batch_size=batch_size, n_channels=2, n_classes=4,
+    val_generator = DataGenerator_4_classes_weights_uni_spacing(df_data, partition='vali', batch_size=batch_size, n_channels=2, n_classes=4,
                                             down_sampling=True, data_source_mode='direct')
-    test_generator = DataGenerator_4_classes_weights(df_data, partition='test', batch_size=batch_size, n_channels=2, n_classes=4,
+    test_generator = DataGenerator_4_classes_weights_uni_spacing(df_data, partition='test', batch_size=batch_size, n_channels=2, n_classes=4,
                                              down_sampling=True, data_source_mode='direct')
 
     # print(val_generator[0])

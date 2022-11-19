@@ -181,3 +181,40 @@ def shape_size_from_bbox():
         shape = (bbox[1]-bbox[0],bbox[3]-bbox[2],bbox[5]-bbox[4])
         shapes.append(shape)
     return shapes
+
+
+def spacing_from_nii():
+    '''Load spacing value from nifti and save it to dataframe'''
+    df = pd.read_csv(r'S:\Data\VerSe_full\nnunet\output\281\df_instance_4_classes_label_5_manuel_unix_syn_all.csv')
+    spacings = []
+    for i in tqdm(df.index.values):
+        ff = df.rel_path_seg_file.loc[i]
+        ff = ff.split('.npy')[0] + '.nii'
+        img_path = os.path.join(r'S:\Data\VerSe_full\nnunet\output\281', ff)
+        r = sitk.ImageFileReader()
+        r.SetFileName(str(img_path))
+        r.LoadPrivateTagsOn()
+        r.ReadImageInformation()
+        spacing = r.GetSpacing()
+        spacings.append(spacing)
+    df['spacings'] = spacings
+    return df
+
+
+def uniform_spacing(desired_spacing=(1,1,1)):
+    import scipy.ndimage
+    
+    df = pd.read_csv(r'S:\Data\VerSe_full\nnunet\output\281\df_instance_4_classes_label_5_manuel_unix_syn_all.csv')
+
+    ff = df.rel_path_seg_file.loc[0]
+    volume = np.load(os.path.join(r'S:\Data\VerSe_full\nnunet\output\281', ff))
+    spacing = eval(df.spacings.loc[0])[::-1]
+    print(spacing)
+    
+    if np.not_equal(tuple(spacing), desired_spacing).any():
+        scipy_dtype = 'int16'
+        # if dtype == 'float16' else dtype  # sadly scipy.ndimage.zoom does not work with float16
+        volume = volume.astype(scipy_dtype, copy=False)
+        volume = scipy.ndimage.zoom(volume, order=1, zoom=np.divide(spacing, desired_spacing), prefilter=False,
+                                    output=scipy_dtype)
+    return volume
