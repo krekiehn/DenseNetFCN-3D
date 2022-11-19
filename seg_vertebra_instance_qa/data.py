@@ -1040,7 +1040,7 @@ class DataGenerator_4_classes_weights(tf.keras.utils.Sequence):
 
 class DataGenerator_4_classes_weights_uni_spacing(tf.keras.utils.Sequence):
     'Generates data for Keras'
-    import scipy.ndimage
+    
     
     def __init__(self, df, batch_size=4, n_channels=2,
                  n_classes=4, shuffle=True, data_path=data_path, partition='train', aug_max_shift=0.1,
@@ -1124,7 +1124,7 @@ class DataGenerator_4_classes_weights_uni_spacing(tf.keras.utils.Sequence):
             scipy_dtype = 'int16'
             # if dtype == 'float16' else dtype  # sadly scipy.ndimage.zoom does not work with float16
             volume = volume.astype(scipy_dtype, copy=False)
-            volume = scipy.ndimage.zoom(volume, order=1, zoom=np.divide(spacing, desired_spacing), prefilter=False, output=scipy_dtype)
+            volume = ndimage.zoom(volume, order=1, zoom=np.divide(spacing, desired_spacing), prefilter=False, output=scipy_dtype)
         return volume
 
     def on_epoch_end(self):
