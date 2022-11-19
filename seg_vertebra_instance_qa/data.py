@@ -1153,8 +1153,8 @@ class DataGenerator_4_classes_weights_uni_spacing(tf.keras.utils.Sequence):
 
         assert np.unique(arr).size == 2, f'Segmentation Mask have not two labels, but {np.unique(arr)}. {file_name}, {file_name_bbox_ct_name}, {ID}'
 
-        arr = self.uniform_spacing(self, volume=arr, index=ID, desired_spacing=(1, 1, 1))
-        arr_ct = self.uniform_spacing(self, volume=arr_ct, index=ID, desired_spacing=(1, 1, 1))
+        arr = self.uniform_spacing(volume=arr, index=ID, desired_spacing=(1, 1, 1))
+        arr_ct = self.uniform_spacing(volume=arr_ct, index=ID, desired_spacing=(1, 1, 1))
         
         if self.down_sampling:
             # do it only for case where all dim are higher than self.min_shape_size
