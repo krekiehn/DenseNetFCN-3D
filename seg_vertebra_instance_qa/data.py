@@ -8,6 +8,7 @@ import numpy as np
 import tensorflow as tf
 import skimage.measure
 from scipy import ndimage
+import elasticdeform
 from SimpelNet import FCN_model
 
 # source: https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
@@ -1294,6 +1295,19 @@ class DataGenerator_4_classes_weights_uni_spacing(tf.keras.utils.Sequence):
                     angle = rd.randint(-45, 45)
                     arr_norm = self.augmentation_rotate_volume(axes=axes_rot, angle=angle, volume=arr_norm, mode='int')
                     arr_ct_norm = self.augmentation_rotate_volume(axes=axes_rot, angle=angle, volume=arr_ct_norm, mode='float')
+
+                # derformity
+                # source: https://github.com/mdciri/3D-augmentation-techniques
+                # https://github.com/DLTK/DLTK/blob/master/examples/tutorials/04_input_normalisation_and_augmentation.ipynb
+                """
+                Elastic deformation on a image and its target
+                """
+
+                [arr_norm, arr_ct_norm] = elasticdeform.deform_random_grid([arr_norm, arr_ct_norm],
+                                                              sigma=25,
+                                                              axis=[(0, 1, 2), (0, 1, 2)],
+                                                              order=[0, 1],
+                                                              mode='constant')
 
             # normalize to [0,1]
             # arr_norm = (arr - arr.min()) / (arr - arr.min()).max()
