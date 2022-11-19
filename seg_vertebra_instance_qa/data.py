@@ -1095,7 +1095,7 @@ class DataGenerator_4_classes_weights_uni_spacing(tf.keras.utils.Sequence):
         #             self.re_init_indices_df(cla=cla)
         #         indices_4_batch_list.append(self.list_df_indices[cla].pop())
         for i in range(self.batch_size):
-            if df_indices == []:
+            if self.df_indices == []:
                 self.on_epoch_end()
             indices_4_batch_list.append(self.df_indices.pop())
         rd.shuffle(indices_4_batch_list)
