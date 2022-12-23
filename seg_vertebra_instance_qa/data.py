@@ -1083,7 +1083,7 @@ class DataGenerator_4_classes_weights_uni_spacing(tf.keras.utils.Sequence):
 
     def __len__(self):
         'Denotes the number of batches per epoch'
-        return self.number_samples // self.batch_size
+        return len(self.df_indices) // self.batch_size
 
     def __getitem__(self, index):
         'Generate one batch of data'
@@ -1119,6 +1119,7 @@ class DataGenerator_4_classes_weights_uni_spacing(tf.keras.utils.Sequence):
             rd.shuffle(self.list_df_indices[cla])
 
     def uniform_spacing(self, volume, index, desired_spacing=(1, 1, 1)):
+        # ToDo: for seg mask interpolation order hast to be 0 = nearest neighbor
         #file = self.df.rel_path_seg_file.loc[index]
         #volume = np.load(os.path.join(self.data_path, file))
         spacing = eval(self.df.spacings.loc[index])[::-1]

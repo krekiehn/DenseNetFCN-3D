@@ -218,3 +218,17 @@ def uniform_spacing(desired_spacing=(1,1,1)):
         volume = scipy.ndimage.zoom(volume, order=1, zoom=np.divide(spacing, desired_spacing), prefilter=False,
                                     output=scipy_dtype)
     return volume
+
+
+def mosemed_check(folder_in=r'D:\Data\CT\Mosmed\mosmed', folder_out=r'D:\Data\CT\Mosmed\mosmed\mosmed'):
+    files_in = os.listdir(folder_in)
+    files_out = os.listdir(folder_out)
+
+    files_todo = []
+
+    for f in files_in:
+        if not '.nii.gz' in f:
+            continue
+        f_tmp = f.split('_0000')[0] + f.split('_0000')[1]
+        if f_tmp not in files_out:
+            files_todo.append(os.path.join(files_in, f))
